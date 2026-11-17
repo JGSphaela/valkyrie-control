@@ -1,0 +1,56 @@
+name: Build Valkyrie Local Helper
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'companion/**'
+      - '.github/workflows/build-helper.yml'
+    tags:
+      - 'v*'
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-helper-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-windows-x64:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up MSVC (x64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Compile companion/valkyrie_helper.cpp
+        shell: cmd
+        run: |
+          if not exist dist mkdir dist
+          cl.exe /O2 /EHsc /MT /W3 /Fe:dist/valkyrie-helper.exe companion/valkyrie_helper.cpp hid.lib setupapi.lib ws2_32.lib user32.lib
+
+      - name: Verify Python helper syntax and binary CLI
+        shell: cmd
+        run: |
+          python -m py_compile companion/valkyrie_helper.py && dist\valkyrie-helper.exe --help
+
+      - name: Upload Windows x64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: valkyrie-helper-windows-x64
+          path: dist/valkyrie-helper.exe
+          if-no-files-found: error
+
+      - name: Attach binary to GitHub Release
+        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/valkyrie-helper.exe
