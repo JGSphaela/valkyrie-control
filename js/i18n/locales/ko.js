@@ -32,11 +32,13 @@ export default {
   'topbar.statusDongle': '2.4G 동글',
   'topbar.statusHelper': '로컬 헬퍼',
   'topbar.statusHelperDongle': '로컬 헬퍼 · 2.4G',
+  'topbar.statusTauri': '연결됨 (데스크톱 앱)',
+  'topbar.statusTauriDongle': '2.4 GHz 동글 (데스크톱 앱)',
   'topbar.statusUnavailable': 'WebHID 미지원',
   'topbar.connect': '마우스 연결',
   'topbar.disconnect': '연결 해제',
 
-  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3395 · 6키)',
+  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3311 · 6키)',
   'models.opt.VK_M3': 'VK M3 (E023 · 6키)',
 
   'perf.title': '센서 및 성능',
@@ -46,7 +48,8 @@ export default {
   'perf.stageLabel': '단계 {{n}}',
   'perf.activeStage': '활성: 단계 {{n}}',
   'perf.lockXY': 'X/Y 축 고정',
-  'perf.unlock26k': '26,000 DPI 잠금 해제 (PAW3395)',
+  'perf.unlock26k': '26,000 DPI 잠금 해제 (PAW3311 12,000 초과 보간, 커브 0x11)',
+  'perf.interpolatedNote': 'PAW3311의 12,000 DPI 초과는 펌웨어 보간 출력입니다(네이티브 센서 CPI 아님).',
   'perf.addStage': '단계 추가',
   'perf.removeStage': '제거',
   'perf.stageColorTitle': '단계 {{n}} 표시기 LED 색상',
@@ -236,6 +239,7 @@ export default {
   'firmware.specTransport': '전송 방식',
   'firmware.transportWebHid': 'WebHID (브라우저 네이티브)',
   'firmware.transportLocalHelper': '로컬 헬퍼 (127.0.0.1:19480)',
+  'firmware.transportTauri': '데스크톱 앱 (네이티브 HID)',
   'firmware.specBattery': '배터리',
   'firmware.batteryCharging': '{{pct}}% (충전 중)',
   'firmware.otaTitle': 'OTA 잠금 보호 (0xFFEF)',
@@ -245,7 +249,7 @@ export default {
   'diagnostics.winCardTitle': 'Windows 브라우저 호환성 대체 연결',
   'diagnostics.winCardBadge': 'MI_02 · CVE-2026-79003',
   'diagnostics.winCardBody':
-    'Windows용 Chrome과 Edge는 WebHID에서 마우스 MI_02 설정 인터페이스를 제거하고 HID 클래스 0x03의 WebUSB도 차단합니다. 드라이버나 펌웨어를 변경하지 않고 연결하려면 로컬 헬퍼를 실행하세요.',
+    'Windows용 Chrome과 Edge는 WebHID에서 마우스 MI_02 설정 인터페이스를 제거하고 HID 클래스 0x03의 WebUSB도 차단합니다. 브라우저 제한 없이 직접 연결하려면 독립 실행형 Valkyrie Control 데스크톱 앱을 다운로드하세요(GitHub Pages용 선택적 폴백으로 로컬 헬퍼도 지원됩니다).',
   'diagnostics.connectHelperBtn': '로컬 헬퍼로 연결',
   'diagnostics.connectingHelperBtn': '연결 중',
   'diagnostics.openGuideBtn': '호환성 가이드',
@@ -255,7 +259,11 @@ export default {
     '2.4 GHz 수신기를 통한 설정 시 간헐적으로 패킷이 유실될 수 있습니다. 설정 동기화가 실패하면 유선 USB로 연결하세요.',
 
   'compat.title': 'Windows 호환성 가이드',
-  'compat.subtitle': 'Windows 10 및 11의 Chrome 또는 Edge에서 VK M3 및 VK M3 Lite 연결하기',
+  'compat.subtitle': 'Windows 10 및 11에서 데스크톱 앱 또는 선택적 브라우저 헬퍼로 VK M3 및 VK M3 Lite 연결하기',
+  'compat.desktopBtn': '데스크톱 앱 다운로드 (Windows)',
+  'compat.optionATitle': '권장: Valkyrie Control 데스크톱 앱 (Windows)',
+  'compat.optionADesc':
+    '독립 실행형 데스크톱 앱을 사용하면 브라우저 MI_02 제한이나 별도 백그라운드 스크립트 없이 기본 HID로 바로 연결됩니다. 아래 companion/ 로컬 헬퍼는 GitHub Pages용 선택적 폴백으로 제공됩니다.',
   'compat.closeAria': '호환성 가이드 닫기',
   'compat.whyTitle': 'Windows 브라우저가 직접 WebHID를 차단하는 이유',
   'compat.whyBody':
@@ -298,8 +306,9 @@ export default {
 
   'toast.connected': '연결됨: {{name}}',
   'toast.helperConnected': '로컬 헬퍼를 통해 연결됨: {{name}}',
+  'toast.tauriConnected': '데스크톱 앱을 통해 {{name}}에 연결됨',
   'toast.wirelessTimeoutTip':
-    '2.4 GHz 무선 전송 시간이 초과되었습니다. 전송이 계속 불안정하면 USB 케이블로 연결하세요.',
+    '2.4 GHz 무선 전송 시간이 초과되었습니다. 2.4 GHz 수신기를 뺐다가 다시 연결해 보거나, 계속 불안정하면 USB 케이블로 연결하세요.',
   'toast.connectionFailed': '연결 실패: {{msg}}',
   'toast.factoryRestored': '공장 기본 설정으로 복원되었습니다',
   'toast.hardwareRejected': '하드웨어가 명령 {{cmd}}을(를) 거부했습니다 (상태 0x03)',

@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"Minimal default capability for Valkyrie Control with zero shell, filesystem, or HTTP permissions.","local":true,"windows":["main"],"permissions":["core:default"]}}

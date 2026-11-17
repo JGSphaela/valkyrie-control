@@ -135,7 +135,7 @@ Any opcode outside this set throws `STALL_GUARD_BLOCKED` before `sendReport()` i
 
 | `sensorId` | Profile | Official Range | Step | Encode Formula | Decode Formula |
 |---|---|---|---|---|---|
-| `0x11` | PAW3395 | `50 .. 24,000` (unlocks to `26,000`) | `50` | `>=13000`: `(dpi-13000)/1000 + 0xDD`; `>10000`: `(dpi-10000)/100 + 0xC8`; else `dpi/50` | `>=0xDD`: `(code-0xDD)*1000 + 13000`; `>=0xC8`: `(code-0xC8)*100 + 10000`; else `code*50` |
+| `0x11` | PAW3395 (`E023`) / PAW3311 (`M220` curve `0x11`) | `50 .. 24,000` (unlocks to `26,000`; `12,000` native on PAW3311) | `50` | `>=13000`: `(dpi-13000)/1000 + 0xDD`; `>10000`: `(dpi-10000)/100 + 0xC8`; else `dpi/50` | `>=0xDD`: `(code-0xDD)*1000 + 13000`; `>=0xC8`: `(code-0xC8)*100 + 10000`; else `code*50` |
 | `0x05` | Sensor `0x05` | `50 .. 12,000` | `50` | `>6400`: `(dpi-6400)/100 + 0x80`; else `dpi/50` | `>=0x81`: `(code-64)*100`; else `code*50` |
 | `0x19` | PAW3950 / `0x19` | `100 .. 30,000` | `100` | `>16000`: `(dpi-16000)/1000 + 0xA0`; else `dpi/100` | `>=0xA0`: `(code-0x90)*1000`; else `code*100` |
 | `0x25` | Sensor `0x25` | `100 .. 10,000` | `100` | `>5000`: `(dpi-5000)/500 + 0x32`; else `dpi/100` | `>=0x32`: `(code-0x28)*500`; else `code*100` |
@@ -147,9 +147,12 @@ Any opcode outside this set throws `STALL_GUARD_BLOCKED` before `sendReport()` i
 | `0x12` | Sensor `0x12` | `100 .. 4,800` | `100` | `dpi/100` | `code*100` |
 | `0x35` | Sensor `0x35` | `100 .. 16,000` | `100` | `dpi/100` | `code*100` |
 
-### PAW3395 `0x11` 26,000 DPI Unlock
+### Curve `0x11` Sensor Mapping (`PAW3311` vs `PAW3395`) & `26,000 DPI` Unlock
 
-On Sensor `0x11` (PAW3395), the official Windows slider caps at `0xE8` (`24,000 DPI`). Setting `unlockMax: true` allows encoding up to `0xEA` (`26,000 DPI`), which the live `M220 v3.17` firmware persists and echoes in `0x13`.
+- **VK M3 Lite (`M220`)**: Physically houses the **PixArt PAW3311** sensor (`12,000` native CPI, matching `mouse_vk m3 lite.xml` factory max `12,000 DPI` and `show_lod="0" show_sensor="0"`). However, `M220 v3.17` firmware reports handshake `byte[10] = 0x11` to reuse DPI curve `0x11`, which supports firmware-interpolated DPI above `12,000` up to `24,000` (`0xE8`) and unlocked `26,000` (`0xEA`).
+- **VK M3 (`E023`)**: Physically houses the **PixArt PAW3395** sensor (`26,000` native CPI) using the same `0x11` curve.
+
+On curve `0x11`, the official Windows slider caps at `0xE8` (`24,000 DPI`). Setting `unlockMax: true` allows encoding up to `0xEA` (`26,000 DPI`), which the live `M220 v3.17` firmware persists and echoes in `0x13`.
 
 ---
 
@@ -195,7 +198,7 @@ Probing the live `VK M3 Lite` (`M220 v3.17`) firmware revealed several capabilit
 
 1. **Unlocked `0..30 ms` Debounce**: The official UI clamps debounce to `4..20 ms`, whereas `0x07` -> `0x17` cleanly persists `0..30 ms` (`0x00..0x1E`).
 2. **Asymmetric X/Y DPI**: `0x03` -> `0x13` independently stores and returns separate 16-bit X and Y stage codes.
-3. **`26,000 DPI` PAW3395 Unlock**: `0x03` accepts `0xEA` (`26,000 DPI`) beyond the official `0xE8` (`24,000 DPI`) ceiling.
+3. **`26,000 DPI` Curve `0x11` Unlock (Interpolated on `PAW3311`)**: `0x03` accepts `0xEA` (`26,000 DPI`) beyond the official `0xE8` (`24,000 DPI`) ceiling; on `M220` (`PAW3311`), values above `12,000 DPI` are firmware-interpolated rather than native sensor CPI.
 4. **Hidden `light="0"` / `show_lod="0"` / `show_sensor="0"` Registers**: Even though `mouse_vk m3 lite.xml` disables these UI tabs, `M220 v3.17` responds to `0x14`, `0x15`, `0x16`, and `0x17`. On `VK M3 Lite`, `0x15` Flowing (`Mode 1`) persists custom `(speed << 4) | brightness` and direction `byte[6]`, whereas Modes `2..5` echo factory color/speed presets on read-back.
 5. **Read-Only `MotionSync` Lock on `M220 v3.17`**: `0x16 byte[7]` returns `0x01` even when `0x06` writes `0x00` for `MotionSync`; `setSensorSettings()` detects this mismatch and flags `state.motionSyncLocked = true`.
 6. **Hardware 1K Polling Cap Enforcement**: Sending `2000`/`4000`/`8000 Hz` (`0x10`/`0x20`/`0x40`) to a `handshake[11] = 0x01` mouse returns `ACK status = 0x03` (`HARDWARE_REJECTED`).

@@ -32,11 +32,13 @@ export default {
   'topbar.statusDongle': '2.4G ドングル',
   'topbar.statusHelper': 'ローカルヘルパー',
   'topbar.statusHelperDongle': 'ローカルヘルパー · 2.4G',
+  'topbar.statusTauri': '接続済み (デスクトップアプリ)',
+  'topbar.statusTauriDongle': '2.4 GHz ドングル (デスクトップアプリ)',
   'topbar.statusUnavailable': 'WebHID 非対応',
   'topbar.connect': 'マウスを接続',
   'topbar.disconnect': '切断',
 
-  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3395 · 6 ボタン)',
+  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3311 · 6 ボタン)',
   'models.opt.VK_M3': 'VK M3 (E023 · 6 ボタン)',
 
   'perf.title': 'センサーとパフォーマンス',
@@ -46,7 +48,8 @@ export default {
   'perf.stageLabel': 'ステージ {{n}}',
   'perf.activeStage': '有効: ステージ {{n}}',
   'perf.lockXY': 'X/Y を同期',
-  'perf.unlock26k': '26,000 DPI を解放 (PAW3395)',
+  'perf.unlock26k': '26,000 DPI を解放 (PAW3311 12,000 超は補間、カーブ 0x11)',
+  'perf.interpolatedNote': 'PAW3311 で 12,000 DPI を超える設定はファームウェア補間です（ネイティブ CPI ではありません）。',
   'perf.addStage': 'ステージ追加',
   'perf.removeStage': '削除',
   'perf.stageColorTitle': 'ステージ {{n}} インジケーター LED カラー',
@@ -236,6 +239,7 @@ export default {
   'firmware.specTransport': 'トランスポート',
   'firmware.transportWebHid': 'WebHID（ブラウザネイティブ）',
   'firmware.transportLocalHelper': 'ローカルヘルパー (127.0.0.1:19480)',
+  'firmware.transportTauri': 'デスクトップアプリ（ネイティブ HID）',
   'firmware.specBattery': 'バッテリー',
   'firmware.batteryCharging': '{{pct}}% (充電中)',
   'firmware.otaTitle': 'OTA ロックアウト保護 (0xFFEF)',
@@ -245,7 +249,7 @@ export default {
   'diagnostics.winCardTitle': 'Windows ブラウザ互換性フォールバック',
   'diagnostics.winCardBadge': 'MI_02 · CVE-2026-79003',
   'diagnostics.winCardBody':
-    'Windows 版 Chrome と Edge は WebHID からマウスの MI_02 設定インターフェースを除外し、HID クラス 0x03 への WebUSB もブロックします。ドライバーやファームウェアを変更せずに接続するには、ローカルヘルパーを起動してください。',
+    'Windows 版 Chrome と Edge は WebHID からマウスの MI_02 設定インターフェースを除外し、HID クラス 0x03 への WebUSB もブロックします。ネイティブ HID 接続にはスタンドアロンの Valkyrie Control デスクトップアプリを推奨します（GitHub Pages 向けの補助としてローカルヘルパーも利用可能です）。',
   'diagnostics.connectHelperBtn': 'ローカルヘルパーで接続',
   'diagnostics.connectingHelperBtn': '接続中',
   'diagnostics.openGuideBtn': '互換性ガイド',
@@ -255,7 +259,11 @@ export default {
     '2.4 GHz レシーバー経由の設定ではパケットがドロップする場合があります。設定の同期に失敗する場合は有線 USB で接続してください。',
 
   'compat.title': 'Windows 互換性ガイド',
-  'compat.subtitle': 'Windows 10 / 11 の Chrome または Edge で VK M3 / VK M3 Lite を接続する',
+  'compat.subtitle': 'Windows 10 / 11 でデスクトップアプリまたはブラウザ補助ヘルパーを使って VK M3 / VK M3 Lite を接続',
+  'compat.desktopBtn': 'デスクトップアプリをダウンロード (Windows)',
+  'compat.optionATitle': '推奨: Valkyrie Control デスクトップアプリ (Windows)',
+  'compat.optionADesc':
+    'スタンドアロンのデスクトップアプリを導入すると、ブラウザの MI_02 制限や常駐スクリプトなしでネイティブ HID 接続が可能です。GitHub Pages 用の任意フォールバックとして下記の companion/ ローカルヘルパーも引き続き利用できます。',
   'compat.closeAria': '互換性ガイドを閉じる',
   'compat.whyTitle': 'Windows ブラウザが直接 WebHID をブロックする理由',
   'compat.whyBody':
@@ -299,8 +307,9 @@ export default {
 
   'toast.connected': '接続しました: {{name}}',
   'toast.helperConnected': 'ローカルヘルパー経由で接続しました: {{name}}',
+  'toast.tauriConnected': 'デスクトップアプリ経由で {{name}} に接続しました',
   'toast.wirelessTimeoutTip':
-    '2.4 GHz ワイヤレス通信がタイムアウトしました。転送が不安定な場合は USB ケーブルで接続してください。',
+    '2.4 GHz ワイヤレス通信がタイムアウトしました。2.4 GHz レシーバーを抜き差しして再試行するか、不安定な場合は USB ケーブルで接続してください。',
   'toast.connectionFailed': '接続に失敗しました: {{msg}}',
   'toast.factoryRestored': '工場出荷時のデフォルト設定を復元しました',
   'toast.hardwareRejected': 'デバイスがコマンド {{cmd}} を拒否しました (status 0x03)',

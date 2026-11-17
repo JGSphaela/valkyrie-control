@@ -72,17 +72,19 @@ export const ALL_POLLING_RATES_HZ = [125, 250, 500, 1000, 2000, 4000, 8000];
  * Official per-sensor metadata derived from `GetMouseData` switch table.
  */
 export const SENSOR_PROFILES = {
-  0x11: { id: 0x11, name: 'PAW3395', minDpi: 50, maxDpi: 24000, unlockMaxDpi: 26000, step: 50, sliderMax: 0xE8, unlockSliderMax: 0xEA },
-  0x05: { id: 0x05, name: 'Sensor 0x05', minDpi: 50, maxDpi: 12000, unlockMaxDpi: 12000, step: 50, sliderMax: 0xB7 },
-  0x19: { id: 0x19, name: 'PAW3950 / 0x19', minDpi: 100, maxDpi: 30000, unlockMaxDpi: 30000, step: 100, sliderMax: 0xAE },
-  0x25: { id: 0x25, name: 'Sensor 0x25', minDpi: 100, maxDpi: 10000, unlockMaxDpi: 10000, step: 100, sliderMax: 0x3C },
-  0x26: { id: 0x26, name: 'Sensor 0x26', minDpi: 200, maxDpi: 10000, unlockMaxDpi: 10000, step: 200, sliderMax: 0x3B },
-  0x04: { id: 0x04, name: 'Sensor 0x04', minDpi: 100, maxDpi: 8000, unlockMaxDpi: 8000, step: 100, sliderMax: 0x2F },
-  0x95: { id: 0x95, name: 'Sensor 0x95', minDpi: 100, maxDpi: 26000, unlockMaxDpi: 26000, step: 100, sliderMax: 0x207 },
-  0x96: { id: 0x96, name: 'Sensor 0x96', minDpi: 100, maxDpi: 32000, unlockMaxDpi: 32000, step: 100, sliderMax: 0x27F },
-  0x10: { id: 0x10, name: 'Sensor 0x10', minDpi: 100, maxDpi: 4800, unlockMaxDpi: 4800, step: 100, sliderMax: 0x30 },
-  0x12: { id: 0x12, name: 'Sensor 0x12', minDpi: 100, maxDpi: 4800, unlockMaxDpi: 4800, step: 100, sliderMax: 0x30 },
-  0x35: { id: 0x35, name: 'Sensor 0x35', minDpi: 100, maxDpi: 16000, unlockMaxDpi: 16000, step: 100, sliderMax: 0xA0 },
+  // Handshake sensorId 0x11 curve: shared by PAW3395 (E023, native 26000) and
+  // PAW3311 (M220 VK M3 Lite, native 12000 with firmware-interpolated DPI > 12000).
+  0x11: { id: 0x11, curveId: 0x11, name: 'PAW3395', m220Name: 'PAW3311', minDpi: 50, nativeMaxDpi: 26000, m220NativeMaxDpi: 12000, maxDpi: 24000, unlockMaxDpi: 26000, step: 50, sliderMax: 0xE8, unlockSliderMax: 0xEA },
+  0x05: { id: 0x05, curveId: 0x05, name: 'Sensor 0x05', minDpi: 50, maxDpi: 12000, unlockMaxDpi: 12000, step: 50, sliderMax: 0xB7 },
+  0x19: { id: 0x19, curveId: 0x19, name: 'PAW3950 / 0x19', minDpi: 100, maxDpi: 30000, unlockMaxDpi: 30000, step: 100, sliderMax: 0xAE },
+  0x25: { id: 0x25, curveId: 0x25, name: 'Sensor 0x25', minDpi: 100, maxDpi: 10000, unlockMaxDpi: 10000, step: 100, sliderMax: 0x3C },
+  0x26: { id: 0x26, curveId: 0x26, name: 'Sensor 0x26', minDpi: 200, maxDpi: 10000, unlockMaxDpi: 10000, step: 200, sliderMax: 0x3B },
+  0x04: { id: 0x04, curveId: 0x04, name: 'Sensor 0x04', minDpi: 100, maxDpi: 8000, unlockMaxDpi: 8000, step: 100, sliderMax: 0x2F },
+  0x95: { id: 0x95, curveId: 0x95, name: 'Sensor 0x95', minDpi: 100, maxDpi: 26000, unlockMaxDpi: 26000, step: 100, sliderMax: 0x207 },
+  0x96: { id: 0x96, curveId: 0x96, name: 'Sensor 0x96', minDpi: 100, maxDpi: 32000, unlockMaxDpi: 32000, step: 100, sliderMax: 0x27F },
+  0x10: { id: 0x10, curveId: 0x10, name: 'Sensor 0x10', minDpi: 100, maxDpi: 4800, unlockMaxDpi: 4800, step: 100, sliderMax: 0x30 },
+  0x12: { id: 0x12, curveId: 0x12, name: 'Sensor 0x12', minDpi: 100, maxDpi: 4800, unlockMaxDpi: 4800, step: 100, sliderMax: 0x30 },
+  0x35: { id: 0x35, curveId: 0x35, name: 'Sensor 0x35', minDpi: 100, maxDpi: 16000, unlockMaxDpi: 16000, step: 100, sliderMax: 0xA0 },
 };
 
 export const FALLBACK_SENSOR_PROFILE = {
@@ -95,10 +97,34 @@ export const FALLBACK_SENSOR_PROFILE = {
   sliderMax: 0x207,
 };
 
-export function getSensorProfile(sensorId, unlockMax = false) {
+/**
+ * Resolve sensor metadata & curve limits, mapping curve `0x11` on `M220` / `VK_M3_LITE`
+ * to physical sensor `PAW3311` (`nativeMaxDpi: 12000`) while keeping `PAW3395` for
+ * `E023` / `VK_M3` or unknown devices.
+ *
+ * @param {number} sensorId
+ * @param {boolean|{ unlockMax?: boolean, devId?: string, modelKey?: string }} [unlockOrOptions=false]
+ */
+export function getSensorProfile(sensorId, unlockOrOptions = false) {
+  const opts = typeof unlockOrOptions === 'object' && unlockOrOptions !== null
+    ? unlockOrOptions
+    : { unlockMax: Boolean(unlockOrOptions) };
+  const unlockMax = Boolean(opts.unlockMax);
+  const devId = opts.devId ? String(opts.devId).trim().toUpperCase() : '';
+  const modelKey = opts.modelKey ? String(opts.modelKey).trim().toUpperCase() : '';
+  const isM220 = devId === 'M220' || modelKey === 'VK_M3_LITE';
+
   const base = SENSOR_PROFILES[sensorId] || { ...FALLBACK_SENSOR_PROFILE, id: sensorId || 0 };
+  const name = (sensorId === 0x11 && isM220) ? (base.m220Name || 'PAW3311') : base.name;
+  const nativeMaxDpi = (sensorId === 0x11 && isM220)
+    ? (base.m220NativeMaxDpi || 12000)
+    : (base.nativeMaxDpi ?? base.unlockMaxDpi ?? base.maxDpi);
+
   return {
     ...base,
+    name,
+    sensorCurveId: base.curveId ?? base.id,
+    nativeMaxDpi,
     effectiveMaxDpi: unlockMax ? (base.unlockMaxDpi || base.maxDpi) : base.maxDpi,
   };
 }
@@ -427,7 +453,7 @@ export function decodeHandshakePacket(pkt) {
   const charging = pkt[12] !== 0;
   const batteryPct = Math.max(0, Math.min(100, pkt[13] & 0xFF));
   const online = pkt[14] !== 0;
-  const sensor = getSensorProfile(sensorId);
+  const sensor = getSensorProfile(sensorId, { devId });
 
   return {
     cmd: 0x10,
@@ -438,7 +464,9 @@ export function decodeHandshakePacket(pkt) {
     fwRaw,
     fwVersion: formatFwVersion(fwMinor, fwMajor),
     sensorId,
+    sensorCurveId: sensor.sensorCurveId,
     sensorName: sensor.name,
+    nativeMaxDpi: sensor.nativeMaxDpi,
     maxDpiOfficial: sensor.maxDpi,
     maxDpiUnlocked: sensor.unlockMaxDpi,
     pollingCapsByte,
@@ -819,8 +847,14 @@ export class ValkyrieM220Device {
     this.#rawRegs = {};
     this.#disposed = false;
 
-    const defaults = MODEL_PROFILES[options.modelKey || 'VK_M3_LITE']?.factoryDefaults
-      || MODEL_PROFILES.VK_M3_LITE.factoryDefaults;
+    const modelKey = options.modelKey || 'VK_M3_LITE';
+    const modelProfile = MODEL_PROFILES[modelKey] || MODEL_PROFILES.VK_M3_LITE;
+    const defaults = modelProfile.factoryDefaults;
+    const initSensor = getSensorProfile(modelProfile.sensorId ?? 0x11, {
+      devId: modelProfile.devId,
+      modelKey,
+      unlockMax: options.unlockMax,
+    });
 
     this.state = {
       connected: Boolean(hidDevice.opened),
@@ -828,17 +862,19 @@ export class ValkyrieM220Device {
       vendorId: hidDevice.vendorId ?? 0x248A,
       productId: hidDevice.productId ?? 0x5D2E,
       productName: hidDevice.productName || 'Valkyrie VK M3 Series',
-      devId: 'M220',
-      modelKey: options.modelKey || 'VK_M3_LITE',
+      devId: modelProfile.devId || 'M220',
+      modelKey,
       fwRaw: 0,
       fwVersion: '—',
       rfFwRaw: 0,
       rfFwVersion: '—',
-      sensorId: 0x11,
-      sensorName: 'PAW3395',
+      sensorId: modelProfile.sensorId ?? 0x11,
+      sensorCurveId: initSensor.sensorCurveId,
+      sensorName: initSensor.name,
+      nativeMaxDpi: initSensor.nativeMaxDpi,
       unlockMax: Boolean(options.unlockMax),
-      maxDpiOfficial: 24000,
-      maxDpiUnlocked: 26000,
+      maxDpiOfficial: initSensor.maxDpi,
+      maxDpiUnlocked: initSensor.unlockMaxDpi,
       pollingCapsByte: 0x01,
       maxPollingHz: 1000,
       supportedPollingRates: [125, 250, 500, 1000],
@@ -1137,7 +1173,9 @@ export class ValkyrieM220Device {
     this.state.fwRaw = info.fwRaw;
     this.state.fwVersion = info.fwVersion;
     this.state.sensorId = info.sensorId;
+    this.state.sensorCurveId = info.sensorCurveId;
     this.state.sensorName = info.sensorName;
+    this.state.nativeMaxDpi = info.nativeMaxDpi;
     this.state.maxDpiOfficial = info.maxDpiOfficial;
     this.state.maxDpiUnlocked = info.maxDpiUnlocked;
     this.state.pollingCapsByte = info.pollingCapsByte;

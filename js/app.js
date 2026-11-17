@@ -181,7 +181,9 @@ class ValkyrieControlApp {
       rfFwRaw: 0,
       rfFwVersion: '—',
       sensorId: profile.sensorId,
+      sensorCurveId: profile.sensorCurveId ?? profile.sensorId,
       sensorName: profile.sensorName,
+      nativeMaxDpi: profile.nativeMaxDpi ?? 12000,
       unlockMax: false,
       lockDpiXY: true,
       maxDpiOfficial: 24000,
@@ -267,6 +269,7 @@ class ValkyrieControlApp {
       btnRemoveDpiStage: q('btnRemoveDpiStage'),
       btnAddDpiStage: q('btnAddDpiStage'),
       dpiStagesList: q('dpiStagesList'),
+      perfInterpolatedNote: q('perfInterpolatedNote'),
       lblPollingCap: q('lblPollingCap'),
       pollingGroup: q('pollingGroup'),
       pollingNotice: q('pollingNotice'),
@@ -409,12 +412,27 @@ class ValkyrieControlApp {
     window.addEventListener('resize', () => this.drawSchematicLeaders());
     this.dom.mouseRenderImg?.addEventListener('load', () => this.drawSchematicLeaders());
 
-    if (this.hidManager.isSupported()) {
+    if (this.isTauriRuntime() || this.hidManager.isSupported()) {
       this.hidManager.autoConnectExisting().catch(() => {});
     } else {
       this.dom.statusText.textContent = t('topbar.statusUnavailable');
       this.dom.btnConnect.disabled = true;
     }
+  }
+
+  isTauriRuntime() {
+    if (typeof this.hidManager?.isTauri === 'function') {
+      return Boolean(this.hidManager.isTauri());
+    }
+    return Boolean(typeof window !== 'undefined' && (window.__TAURI_INTERNALS__ || window.__TAURI__));
+  }
+
+  getCurrentSensorProfile() {
+    return getSensorProfile(this.state.sensorId, {
+      unlockMax: this.state.unlockMax,
+      devId: this.state.devId,
+      modelKey: this.state.modelKey,
+    });
   }
 
   applyTheme(theme, persist = true) {
@@ -487,17 +505,25 @@ class ValkyrieControlApp {
   }
 
   getConnectedStatusText() {
-    if (this.hidManager.transportType === 'local-helper') {
+    const transport = this.hidManager.transportType;
+    if (transport === 'tauri') {
+      return this.state.isWireless ? t('topbar.statusTauriDongle') : t('topbar.statusTauri');
+    }
+    if (transport === 'local-helper') {
       return this.state.isWireless ? t('topbar.statusHelperDongle') : t('topbar.statusHelper');
     }
     return this.state.isWireless ? t('topbar.statusDongle') : t('topbar.statusConnected');
   }
 
   renderBanners() {
-    const showWinCompat = !this.isConnected && this.winCompatVisible;
+    const inTauri = this.isTauriRuntime();
+    const showWinCompat = !inTauri && !this.isConnected && this.winCompatVisible;
     const showWirelessWarn = this.isConnected && Boolean(this.state.isWireless) && !this.wirelessWarnDismissed;
     this.dom.winCompatBanner?.classList.toggle('hidden', !showWinCompat);
     this.dom.wirelessStabilityBanner?.classList.toggle('hidden', !showWirelessWarn);
+    this.dom.btnTopbarCompatGuide?.classList.toggle('hidden', inTauri);
+    this.dom.btnFwCompatGuide?.classList.toggle('hidden', inTauri);
+    this.dom.btnFwCompatGuide?.closest('.card-footer-actions')?.classList.toggle('hidden', inTauri);
   }
 
   renderHelperConnectButtons() {
@@ -518,6 +544,7 @@ class ValkyrieControlApp {
 
   setCompatModalOpen(open, triggerEl = null) {
     if (!this.dom.compatGuideModal) return;
+    if (open && this.isTauriRuntime()) return;
     if (open) {
       this.modalLastTrigger = triggerEl || document.activeElement;
       this.dom.compatGuideModal.classList.remove('hidden');
@@ -582,7 +609,9 @@ class ValkyrieControlApp {
       this.renderAll();
       const profile = getModelByKey(this.state.modelKey);
       const transport = info.transportType || this.hidManager.transportType;
-      const toastKey = transport === 'local-helper' ? 'toast.helperConnected' : 'toast.connected';
+      const toastKey = transport === 'tauri'
+        ? 'toast.tauriConnected'
+        : (transport === 'local-helper' ? 'toast.helperConnected' : 'toast.connected');
       this.showToast(t(toastKey, { name: profile.name }));
     } else if (status === 'disconnected') {
       this.handleDeviceDisconnected();
@@ -602,7 +631,9 @@ class ValkyrieControlApp {
     this.dom.selModel.disabled = false;
     this.dom.btnConnect.textContent = t('topbar.connect');
     this.dom.statusDot.classList.remove('connected');
-    this.dom.statusText.textContent = this.hidManager.isSupported()
+    const supported = this.isTauriRuntime() || this.hidManager.isSupported();
+    this.dom.btnConnect.disabled = !supported;
+    this.dom.statusText.textContent = supported
       ? t('topbar.statusNotConnected')
       : t('topbar.statusUnavailable');
     this.dom.batteryBadge.classList.add('hidden');
@@ -870,7 +901,7 @@ class ValkyrieControlApp {
       try {
         await this.hidManager.requestAndConnect();
       } catch (err) {
-        if (err?.code === 'OTA_COLLECTION_BLOCKED' || err?.code === 'NO_COMMAND_INTERFACE') {
+        if (!this.isTauriRuntime() && (err?.code === 'OTA_COLLECTION_BLOCKED' || err?.code === 'NO_COMMAND_INTERFACE')) {
           this.winCompatVisible = true;
           this.renderBanners();
         }
@@ -943,7 +974,7 @@ class ValkyrieControlApp {
 
     this.dom.chkUnlock26k?.addEventListener('change', async (e) => {
       this.state.unlockMax = e.target.checked;
-      const prof = getSensorProfile(this.state.sensorId, this.state.unlockMax);
+      const prof = this.getCurrentSensorProfile();
       let clamped = false;
       this.state.stages = this.state.stages.map((s) => {
         const nx = Math.min(s.x, prof.effectiveMaxDpi);
@@ -959,7 +990,7 @@ class ValkyrieControlApp {
 
     this.dom.btnAddDpiStage?.addEventListener('click', async () => {
       if (this.state.stages.length >= 6) return;
-      const prof = getSensorProfile(this.state.sensorId, this.state.unlockMax);
+      const prof = this.getCurrentSensorProfile();
       const last = this.state.stages[this.state.stages.length - 1]?.x || 800;
       const next = decodeDpiCode(
         this.state.sensorId,
@@ -1612,7 +1643,8 @@ class ValkyrieControlApp {
       this.dom.sidebarFwVersion.textContent = this.isConnected ? (this.state.fwVersion || '—') : '—';
     }
     if (this.dom.sidebarSensor) {
-      this.dom.sidebarSensor.textContent = this.state.sensorName || 'PAW3395';
+      const profile = getModelByKey(this.state.modelKey);
+      this.dom.sidebarSensor.textContent = this.state.sensorName || profile.sensorName || 'PAW3311';
     }
   }
 
@@ -1622,11 +1654,14 @@ class ValkyrieControlApp {
     }
     this.dom.batteryChargingIcon?.classList.toggle('hidden', !this.state.charging);
     if (this.isConnected) {
+      this.dom.btnConnect.disabled = false;
       this.dom.btnConnect.textContent = t('topbar.disconnect');
       this.dom.statusText.textContent = this.getConnectedStatusText();
     } else {
+      const supported = this.isTauriRuntime() || this.hidManager.isSupported();
+      this.dom.btnConnect.disabled = !supported;
       this.dom.btnConnect.textContent = t('topbar.connect');
-      this.dom.statusText.textContent = this.hidManager.isSupported()
+      this.dom.statusText.textContent = supported
         ? t('topbar.statusNotConnected')
         : t('topbar.statusUnavailable');
     }
@@ -1642,7 +1677,7 @@ class ValkyrieControlApp {
   }
 
   renderDpiStages() {
-    const prof = getSensorProfile(this.state.sensorId, this.state.unlockMax);
+    const prof = this.getCurrentSensorProfile();
     const minDpi = prof.minDpi;
     const maxDpi = prof.effectiveMaxDpi;
     const activeNum = this.state.activeDpiStage + 1;
@@ -1651,6 +1686,15 @@ class ValkyrieControlApp {
     this.dom.chkLockDpiXY.checked = Boolean(this.state.lockDpiXY);
     this.dom.chkUnlock26k.checked = Boolean(this.state.unlockMax);
     this.dom.wrapUnlock26k?.classList.toggle('hidden', this.state.sensorId !== 0x11);
+
+    const isPaw3311 = this.state.sensorName === 'PAW3311'
+      || this.state.modelKey === 'VK_M3_LITE'
+      || this.state.devId === 'M220';
+    const hasHighStage = Array.isArray(this.state.stages)
+      && this.state.stages.some((s) => s.x > 12000 || s.y > 12000);
+    const showInterpolatedNote = this.state.sensorId === 0x11
+      && (isPaw3311 || this.state.unlockMax || hasHighStage);
+    this.dom.perfInterpolatedNote?.classList.toggle('hidden', !showInterpolatedNote);
 
     this.dom.btnAddDpiStage.disabled = this.state.stages.length >= 6;
     this.dom.btnRemoveDpiStage.disabled = this.state.stages.length <= 1;
@@ -2789,9 +2833,12 @@ class ValkyrieControlApp {
     }
 
     if (this.dom.fwSpecTransport) {
+      const transport = this.hidManager.transportType;
       if (!this.isConnected) {
         this.dom.fwSpecTransport.textContent = '—';
-      } else if (this.hidManager.transportType === 'local-helper') {
+      } else if (transport === 'tauri') {
+        this.dom.fwSpecTransport.textContent = t('firmware.transportTauri');
+      } else if (transport === 'local-helper') {
         this.dom.fwSpecTransport.textContent = t('firmware.transportLocalHelper');
       } else {
         this.dom.fwSpecTransport.textContent = t('firmware.transportWebHid');

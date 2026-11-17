@@ -1,0 +1,9 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Minimal default capability for Valkyrie Control with zero shell, filesystem, or HTTP permissions.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default"
+  ]
+}

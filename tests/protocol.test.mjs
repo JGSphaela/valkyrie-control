@@ -50,6 +50,7 @@ import {
   decodeSleepPacket,
   encodeDpiCode,
   formatHex,
+  getSensorProfile,
   isAllowedOpcode,
   parseHex,
   verifyPacketChecksum,
@@ -64,8 +65,16 @@ import {
   LocalBridgeHidDevice,
   fetchHelperDevices,
 } from '../js/hid/local-bridge-device.js';
+import {
+  TAURI_EVENT_DISCONNECT,
+  TAURI_EVENT_INPUT_REPORT,
+  TauriBridgeHidDevice,
+  isTauriRuntime,
+  listTauriDevices,
+  selectPreferredTauriDevice,
+} from '../js/hid/tauri-bridge-device.js';
 
-// Verbatim live hardware capture from M220 (VK M3 Lite, fw v3.17, PAW3395)
+// Verbatim live hardware capture from M220 (VK M3 Lite, fw v3.17, PAW3311 / curve 0x11)
 const VIRGIN_BACKUP_FIXTURE = {
   device: {
     vid: 9354,
@@ -231,6 +240,11 @@ test('1. Device & model registries match config.xml and device XMLs', () => {
   assert.equal(getModelList().length, 2);
   assert.equal(getModelByPid(0x5D2E, 'E023').id, 'VK_M3');
   assert.equal(getModelByKey('M220').id, 'VK_M3_LITE');
+  assert.equal(MODEL_PROFILES.VK_M3_LITE.sensorName, 'PAW3311');
+  assert.equal(MODEL_PROFILES.VK_M3_LITE.sensorCurveId, 0x11);
+  assert.equal(MODEL_PROFILES.VK_M3_LITE.nativeMaxDpi, 12000);
+  assert.equal(MODEL_PROFILES.VK_M3.sensorName, 'PAW3395');
+  assert.equal(MODEL_PROFILES.VK_M3.nativeMaxDpi, 26000);
   assert.equal(MODEL_PROFILES.VK_M3_LITE.buttons.length, 6);
   assert.equal(MODEL_PROFILES.VK_M3_LITE.buttons[3].pinX, 4);
   assert.equal(MODEL_PROFILES.VK_M3_LITE.buttons[4].pinX, 4);
@@ -338,7 +352,7 @@ test('4. WebHidManager accepts (0x0001/0x0000) & (0xFF01/0x0010) 32B and strictl
 });
 
 test('5. All 11 sensor DPI curves + fallback + unlockMax (26,000) + asymmetric X/Y', async () => {
-  // 0x11 PAW3395: official cap 24000 (0xE8), unlocked 26000 (0xEA), <=10000 uses dpi/50 & code*50
+  // 0x11 curve (PAW3311 on M220 / PAW3395 on E023): official cap 24000 (0xE8), unlocked 26000 (0xEA), <=10000 uses dpi/50 & code*50
   assert.equal(encodeDpiCode(0x11, 50), 1);
   assert.equal(decodeDpiCode(0x11, 1), 50);
   assert.equal(encodeDpiCode(0x11, 800), 0x10);
@@ -435,10 +449,27 @@ test('6. Live virgin_backup.json decoders and full syncAll state match factory h
   assert.equal(hs.devId, 'M220');
   assert.equal(hs.fwVersion, 'v3.17');
   assert.equal(hs.sensorId, 0x11);
+  assert.equal(hs.sensorCurveId, 0x11);
+  assert.equal(hs.sensorName, 'PAW3311');
+  assert.equal(hs.nativeMaxDpi, 12000);
+  assert.equal(hs.maxDpiOfficial, 24000);
+  assert.equal(hs.maxDpiUnlocked, 26000);
   assert.equal(hs.maxPollingHz, 1000);
   assert.equal(hs.batteryPct, 100);
   assert.equal(hs.charging, true);
   assert.equal(hs.online, true);
+
+  assert.equal(getSensorProfile(0x11, { devId: 'M220' }).name, 'PAW3311');
+  assert.equal(getSensorProfile(0x11, { devId: 'M220' }).nativeMaxDpi, 12000);
+  assert.equal(getSensorProfile(0x11, { devId: 'E023' }).name, 'PAW3395');
+  assert.equal(getSensorProfile(0x11, { devId: 'E023' }).nativeMaxDpi, 26000);
+
+  const e023Pkt = parseHex(VIRGIN_BACKUP_FIXTURE.regs['0x10']);
+  e023Pkt.set([0x45, 0x30, 0x32, 0x33], 4); // 'E023'
+  const hsE023 = decodeHandshakePacket(e023Pkt);
+  assert.equal(hsE023.devId, 'E023');
+  assert.equal(hsE023.sensorName, 'PAW3395');
+  assert.equal(hsE023.nativeMaxDpi, 26000);
 
   const buttons = decodeButtonsPacket(parseHex(VIRGIN_BACKUP_FIXTURE.regs['0x11']));
   assert.equal(buttons.length, 6);
@@ -478,6 +509,9 @@ test('6. Live virgin_backup.json decoders and full syncAll state match factory h
   const dev = new ValkyrieM220Device(mockHid, { isWireless: true, writeSettleMs: 50 });
   const state = await dev.syncAll();
   assert.equal(state.devId, 'M220');
+  assert.equal(state.sensorName, 'PAW3311');
+  assert.equal(state.sensorCurveId, 0x11);
+  assert.equal(state.nativeMaxDpi, 12000);
   assert.equal(state.fwVersion, 'v3.17');
   assert.equal(state.rfFwVersion, 'v3.17');
   assert.equal(state.batteryPct, 100);
@@ -1182,5 +1216,299 @@ test('18. Fast disconnect while LocalBridgeHidDevice POST /api/report is in flig
     assert.equal(mgr.device, null);
   } finally {
     process.off('unhandledRejection', onUnhandled);
+  }
+});
+
+function createMockTauriApi({
+  devices,
+  initialRegs = VIRGIN_BACKUP_FIXTURE.regs,
+  hidOpts = {},
+} = {}) {
+  const mockHid = new MockHidDevice(initialRegs, hidOpts);
+  const invocations = [];
+  const listeners = new Map();
+
+  const deviceList = devices ?? [
+    {
+      id: 'tauri-ota-ffef',
+      vendorId: 0x248A,
+      productId: 0x5D2E,
+      productName: 'Valkyrie VK M3 OTA',
+      usagePage: 0xFFEF,
+      usage: 0x0000,
+      inputReportBytes: 64,
+      outputReportBytes: 64,
+      isWireless: false,
+    },
+    {
+      id: 'tauri-mi02-cmd',
+      vendorId: 0x248A,
+      productId: 0x5D2E,
+      productName: 'Valkyrie VK M3 Lite',
+      usagePage: 0x0001,
+      usage: 0x0000,
+      inputReportBytes: 32,
+      outputReportBytes: 32,
+      isWireless: false,
+    },
+  ];
+
+  const emitTauri = (eventName, payload) => {
+    for (const cb of listeners.get(eventName) || []) {
+      cb({ event: eventName, payload });
+    }
+  };
+
+  let openedDeviceId = null;
+  mockHid.addEventListener('inputreport', (ev) => {
+    const bytes = new Uint8Array(ev.data.buffer, ev.data.byteOffset, ev.data.byteLength);
+    emitTauri(TAURI_EVENT_INPUT_REPORT, {
+      id: openedDeviceId || 'tauri-mi02-cmd',
+      reportId: 0,
+      bytes: Array.from(bytes),
+    });
+  });
+
+  const tauriApi = {
+    invoke: async (cmd, args = {}) => {
+      invocations.push({ cmd, args });
+      if (cmd === 'list_valkyrie_devices') {
+        return deviceList;
+      }
+      if (cmd === 'open_valkyrie_device') {
+        const match = deviceList.find((d) => d.id === args.deviceId);
+        if (!match) throw new Error(`NO_COMMAND_INTERFACE: unknown id ${args.deviceId}`);
+        if (match.usagePage === 0xFFEF) {
+          throw new Error('OTA_COLLECTION_BLOCKED: refused 0xFFEF OTA interface');
+        }
+        openedDeviceId = match.id;
+        await mockHid.open();
+        return match;
+      }
+      if (cmd === 'close_valkyrie_device') {
+        openedDeviceId = null;
+        await mockHid.close();
+        return null;
+      }
+      if (cmd === 'send_valkyrie_report') {
+        const payload = Uint8Array.from(args.payload || []);
+        await mockHid.sendReport(args.reportId, payload);
+        return null;
+      }
+      throw new Error(`UNKNOWN_TAURI_COMMAND: ${cmd}`);
+    },
+    listen: async (eventName, handler) => {
+      if (!listeners.has(eventName)) listeners.set(eventName, new Set());
+      listeners.get(eventName).add(handler);
+      return () => {
+        listeners.get(eventName)?.delete(handler);
+      };
+    },
+  };
+
+  return { tauriApi, invocations, mockHid, emitTauri, listeners };
+}
+
+test('19. Tauri runtime detection, VID/interface filtering, 0xFFEF rejection, and 0xFF01 preference', async () => {
+  assert.equal(isTauriRuntime(undefined), false);
+  assert.equal(isTauriRuntime({}), false);
+  assert.equal(isTauriRuntime({ __TAURI_INTERNALS__: { invoke: () => {} } }), false);
+  assert.equal(isTauriRuntime({
+    __TAURI__: {
+      core: { invoke: async () => [] },
+      event: { listen: async () => () => {} },
+    },
+  }), true);
+  assert.equal(isTauriRuntime({
+    __TAURI_INTERNALS__: { invoke: async () => [], listen: async () => () => {} },
+  }), true);
+
+  const mixed = [
+    { id: 'ota', vendorId: 0x248A, productId: 0x5D2E, usagePage: 0xFFEF, usage: 0x0000, inputReportBytes: 64, outputReportBytes: 64 },
+    { id: 'bad-vid', vendorId: 0x1234, productId: 0x5D2E, usagePage: 0x0001, usage: 0x0000, inputReportBytes: 32, outputReportBytes: 32 },
+    { id: 'bad-size', vendorId: 0x248A, productId: 0x5D2E, usagePage: 0x0001, usage: 0x0000, inputReportBytes: 8, outputReportBytes: 8 },
+    { id: 'desktop', vendorId: 0x248A, productId: 0x5D2E, usagePage: 0x0001, usage: 0x0000, inputReportBytes: 32, outputReportBytes: 32 },
+    { id: 'vendor', vendorId: 0x249A, productId: 0x5C2F, usagePage: 0xFF01, usage: 0x0010, inputReportBytes: 32, outputReportBytes: 32, isWireless: true },
+  ];
+
+  const picked = selectPreferredTauriDevice(mixed);
+  assert.equal(picked.id, 'vendor');
+  assert.equal(picked.usagePage, 0xFF01);
+
+  const mock = createMockTauriApi({ devices: mixed });
+  const listed = await listTauriDevices({ tauriApi: mock.tauriApi });
+  assert.deepEqual(listed.map((d) => d.id), ['vendor', 'desktop']);
+
+  // Attempting to open 0xFFEF TauriBridgeHidDevice must reject BEFORE calling invoke()
+  let otaInvokes = 0;
+  const otaBridge = new TauriBridgeHidDevice(mixed[0], {
+    tauriApi: {
+      invoke: async () => { otaInvokes += 1; },
+      listen: async () => () => {},
+    },
+  });
+  await assert.rejects(() => otaBridge.open(), (err) => err.code === 'OTA_COLLECTION_BLOCKED');
+  assert.equal(otaInvokes, 0);
+});
+
+test('20. TauriBridgeHidDevice enforces reportId === 0, 32-byte length, and opcode stall guard BEFORE invoke()', async () => {
+  const mock = createMockTauriApi();
+  const bridge = new TauriBridgeHidDevice(
+    { id: 'tauri-mi02-cmd', vendorId: 0x248A, productId: 0x5D2E, usagePage: 0x0001, usage: 0x0000, inputReportBytes: 32, outputReportBytes: 32 },
+    { tauriApi: mock.tauriApi }
+  );
+  await bridge.open();
+  mock.invocations.length = 0;
+
+  for (const blockedCmd of [0x18, 0x19, 0x1F, 0x21, 0x2A, 0x52]) {
+    const pkt = new Uint8Array(32);
+    pkt[0] = blockedCmd;
+    await assert.rejects(
+      () => bridge.sendReport(0, pkt),
+      (err) => err.code === 'STALL_GUARD_BLOCKED'
+    );
+  }
+
+  // Non-zero reportId rejected before invoke()
+  await assert.rejects(
+    () => bridge.sendReport(1, buildCommandPacket(0x10)),
+    (err) => err.code === 'STALL_GUARD_BLOCKED'
+  );
+
+  // Wrong payload length rejected before invoke()
+  await assert.rejects(
+    () => bridge.sendReport(0, new Uint8Array([0x10, 0x00, 0x01])),
+    (err) => err.code === 'INVALID_REPORT_LENGTH'
+  );
+
+  assert.equal(mock.invocations.length, 0, 'No Tauri invoke() may fire for blocked or invalid reports');
+
+  // Allowed 0x20 packet invokes send_valkyrie_report cleanly
+  await bridge.sendReport(0, buildCommandPacket(0x20));
+  const reportCalls = mock.invocations.filter((c) => c.cmd === 'send_valkyrie_report');
+  assert.equal(reportCalls.length, 1);
+  assert.equal(reportCalls[0].args.reportId, 0);
+  assert.equal(reportCalls[0].args.payload.length, 32);
+
+  await bridge.close();
+  assert.equal(bridge.opened, false);
+});
+
+test('21. WebHidManager Tauri mode routes isSupported/requestAndConnect, syncs PAW3311, streams events, and handles disconnect', async () => {
+  const mock = createMockTauriApi();
+  const statusEvents = [];
+  const notifications = [];
+  let disconnectCallbacks = 0;
+
+  const origFetch = globalThis.fetch;
+  let fetchCalls = 0;
+  globalThis.fetch = async () => {
+    fetchCalls += 1;
+    throw new Error('Unexpected localhost fetch in Tauri mode');
+  };
+
+  try {
+    // navigator.hid unavailable, yet isSupported() must return true in Tauri mode
+    const mgr = new WebHidManager({
+      writeSettleMs: 50,
+      tauriApi: mock.tauriApi,
+      onStatusChange: (status, info) => statusEvents.push({ status, info }),
+      onNotification: (evt) => notifications.push(evt),
+      onDeviceDisconnect: () => { disconnectCallbacks += 1; },
+    });
+
+    assert.equal(mgr.isTauri(), true);
+    assert.equal(mgr.isSupported(), true);
+
+    const session = await mgr.requestAndConnect();
+    assert.equal(mgr.transportType, 'tauri');
+    assert.equal(session.transportType, 'tauri');
+    assert.equal(session.helperBaseUrl, null);
+    assert.equal(session.state.devId, 'M220');
+    assert.equal(session.state.sensorName, 'PAW3311');
+    assert.equal(session.state.sensorCurveId, 0x11);
+    assert.equal(session.state.nativeMaxDpi, 12000);
+    assert.equal(fetchCalls, 0);
+
+    assert.equal(statusEvents[0].status, 'connected');
+    assert.equal(statusEvents[0].info.transportType, 'tauri');
+    assert.equal(statusEvents[0].info.helperBaseUrl, null);
+
+    // Emit unsolicited 0xC0 battery report over Tauri event channel
+    const c0 = new Uint8Array(32);
+    c0[0] = 0xC0;
+    c0[1] = 0x01;
+    c0[2] = 63;
+    c0[3] = 0x00;
+    c0[31] = computeChecksum(c0);
+    mock.emitTauri(TAURI_EVENT_INPUT_REPORT, {
+      id: 'tauri-mi02-cmd',
+      reportId: 0,
+      bytes: Array.from(c0),
+    });
+
+    assert.equal(notifications.length, 1);
+    assert.equal(notifications[0].batteryPct, 63);
+    assert.equal(session.device.state.batteryPct, 63);
+
+    // Unplug event via valkyrie://disconnect resets manager cleanly
+    mock.emitTauri(TAURI_EVENT_DISCONNECT, {
+      id: 'tauri-mi02-cmd',
+      reason: 'USB device removed',
+    });
+    await new Promise((r) => setTimeout(r, 20));
+
+    assert.equal(mgr.transportType, null);
+    assert.equal(mgr.device, null);
+    assert.equal(disconnectCallbacks, 1);
+    assert.equal(statusEvents.at(-1).status, 'disconnected');
+
+    // Reconnect via autoConnectExisting() and verify explicit disconnect() invokes close_valkyrie_device
+    await mgr.autoConnectExisting();
+    assert.equal(mgr.transportType, 'tauri');
+    await mgr.disconnect();
+    assert.equal(mgr.transportType, null);
+    assert.ok(mock.invocations.some((c) => c.cmd === 'close_valkyrie_device'));
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test('22. WebHidManager uses global window.__TAURI__ when no tauriApi option is injected', async () => {
+  const mock = createMockTauriApi();
+  const hadWindow = Object.prototype.hasOwnProperty.call(globalThis, 'window');
+  const prevWindow = globalThis.window;
+
+  globalThis.window = {
+    __TAURI__: {
+      core: { invoke: mock.tauriApi.invoke },
+      event: { listen: mock.tauriApi.listen },
+    },
+  };
+
+  try {
+    const mgr = new WebHidManager({ writeSettleMs: 50 });
+    assert.equal(mgr.isTauri(), true);
+    assert.equal(mgr.isSupported(), true);
+
+    const autoSession = await mgr.autoConnectExisting();
+    assert.equal(mgr.transportType, 'tauri');
+    assert.equal(autoSession.transportType, 'tauri');
+    assert.equal(autoSession.state.devId, 'M220');
+    assert.equal(autoSession.state.sensorName, 'PAW3311');
+    await mgr.disconnect();
+    assert.equal(mgr.transportType, null);
+
+    const manualSession = await mgr.requestAndConnect();
+    assert.equal(mgr.transportType, 'tauri');
+    assert.equal(manualSession.transportType, 'tauri');
+    await mgr.disconnect();
+    assert.equal(mgr.transportType, null);
+  } finally {
+    if (hadWindow) {
+      globalThis.window = prevWindow;
+    } else {
+      delete globalThis.window;
+    }
   }
 });

@@ -32,11 +32,13 @@ export default {
   'topbar.statusDongle': '2.4G-Dongle',
   'topbar.statusHelper': 'Lokaler Helper',
   'topbar.statusHelperDongle': 'Lokaler Helper · 2.4G',
+  'topbar.statusTauri': 'Verbunden (Desktop-App)',
+  'topbar.statusTauriDongle': '2.4-GHz-Dongle (Desktop-App)',
   'topbar.statusUnavailable': 'WebHID nicht verfügbar',
   'topbar.connect': 'Maus verbinden',
   'topbar.disconnect': 'Trennen',
 
-  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3395 · 6 Tasten)',
+  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3311 · 6 Tasten)',
   'models.opt.VK_M3': 'VK M3 (E023 · 6 Tasten)',
 
   'perf.title': 'Sensor & Leistung',
@@ -46,7 +48,8 @@ export default {
   'perf.stageLabel': 'Stufe {{n}}',
   'perf.activeStage': 'Aktiv: Stufe {{n}}',
   'perf.lockXY': 'X/Y koppeln',
-  'perf.unlock26k': '26.000 DPI freischalten (PAW3395)',
+  'perf.unlock26k': '26.000 DPI freischalten (PAW3311 interpoliert > 12.000, Kurve 0x11)',
+  'perf.interpolatedNote': 'Über 12.000 DPI erfolgt auf dem PAW3311 per Firmware-Interpolation (keine native Sensor-CPI).',
   'perf.addStage': 'Stufe hinzufügen',
   'perf.removeStage': 'Entfernen',
   'perf.stageColorTitle': 'Anzeige-LED-Farbe für Stufe {{n}}',
@@ -238,6 +241,7 @@ export default {
   'firmware.specTransport': 'Transport',
   'firmware.transportWebHid': 'WebHID (Browser-nativ)',
   'firmware.transportLocalHelper': 'Lokaler Helper (127.0.0.1:19480)',
+  'firmware.transportTauri': 'Desktop-App (Natives HID)',
   'firmware.specBattery': 'Akku',
   'firmware.batteryCharging': '{{pct}}% (Lädt)',
   'firmware.otaTitle': 'OTA-Sperrschutz (0xFFEF)',
@@ -247,7 +251,7 @@ export default {
   'diagnostics.winCardTitle': 'Windows-Browser-Kompatibilitätsfallback',
   'diagnostics.winCardBadge': 'MI_02 · CVE-2026-79003',
   'diagnostics.winCardBody':
-    'Windows-Chrome und -Edge entfernen die MI_02-Einstellungsschnittstelle der Maus aus WebHID und blockieren WebUSB für HID-Klasse 0x03. Starte den lokalen Helper, um ohne Treiber- oder Firmwareänderung zu verbinden.',
+    'Windows-Chrome und -Edge entfernen die MI_02-Einstellungsschnittstelle der Maus aus WebHID und blockieren WebUSB für HID-Klasse 0x03. Lade die eigenständige Valkyrie Control Desktop-App für direkten nativen Zugriff herunter oder nutze den lokalen Helper als optionales Fallback auf GitHub Pages.',
   'diagnostics.connectHelperBtn': 'Über lokalen Helper verbinden',
   'diagnostics.connectingHelperBtn': 'Verbindet',
   'diagnostics.openGuideBtn': 'Kompatibilitätsleitfaden',
@@ -257,7 +261,11 @@ export default {
     'Bei der Konfiguration über den 2.4-GHz-Empfänger können gelegentlich Pakete verloren gehen. Wechsle auf Kabel-USB, falls Einstellungen nicht synchronisiert werden.',
 
   'compat.title': 'Windows-Kompatibilitätsleitfaden',
-  'compat.subtitle': 'VK M3 und VK M3 Lite in Chrome oder Edge unter Windows 10 und 11 verbinden',
+  'compat.subtitle': 'VK M3 und VK M3 Lite unter Windows 10 und 11 per Desktop-App oder optionalem Browser-Helper verbinden',
+  'compat.desktopBtn': 'Desktop-App herunterladen (Windows)',
+  'compat.optionATitle': 'Empfohlen: Valkyrie Control Desktop-App (Windows)',
+  'compat.optionADesc':
+    'Lade die eigenständige Desktop-App für direkten nativen HID-Zugriff ohne Browser-MI_02-Beschränkung und ohne Hintergrundskript herunter. Der untenstehende companion/-Helper bleibt als optionales Fallback für GitHub Pages verfügbar.',
   'compat.closeAria': 'Kompatibilitätsleitfaden schließen',
   'compat.whyTitle': 'Warum Windows-Browser direktes WebHID blockieren',
   'compat.whyBody':
@@ -301,8 +309,9 @@ export default {
 
   'toast.connected': 'Verbunden: {{name}}',
   'toast.helperConnected': 'Über lokalen Helper verbunden: {{name}}',
+  'toast.tauriConnected': 'Über Desktop-App mit {{name}} verbunden',
   'toast.wirelessTimeoutTip':
-    '2.4-GHz-Funkübertragung abgelaufen. Verbinde per USB-Kabel, falls Übertragungen instabil bleiben.',
+    '2.4-GHz-Funkübertragung abgelaufen. Ziehe den 2.4-GHz-Empfänger ab und stecke ihn wieder ein, oder verbinde per USB-Kabel, falls Übertragungen instabil bleiben.',
   'toast.connectionFailed': 'Verbindung fehlgeschlagen: {{msg}}',
   'toast.factoryRestored': 'Werkseinstellungen wiederhergestellt',
   'toast.hardwareRejected': 'Hardware hat Befehl {{cmd}} abgelehnt (Status 0x03)',

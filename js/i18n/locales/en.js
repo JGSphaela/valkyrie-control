@@ -32,11 +32,13 @@ export default {
   'topbar.statusDongle': '2.4G dongle',
   'topbar.statusHelper': 'Local helper',
   'topbar.statusHelperDongle': 'Local helper · 2.4G',
+  'topbar.statusTauri': 'Connected (Desktop App)',
+  'topbar.statusTauriDongle': '2.4 GHz Dongle (Desktop App)',
   'topbar.statusUnavailable': 'WebHID unavailable',
   'topbar.connect': 'Connect mouse',
   'topbar.disconnect': 'Disconnect',
 
-  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3395 · 6 keys)',
+  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3311 · 6 keys)',
   'models.opt.VK_M3': 'VK M3 (E023 · 6 keys)',
 
   'perf.title': 'Sensor & performance',
@@ -46,7 +48,8 @@ export default {
   'perf.stageLabel': 'Stage {{n}}',
   'perf.activeStage': 'Active: Stage {{n}}',
   'perf.lockXY': 'Lock X/Y',
-  'perf.unlock26k': 'Unlock 26,000 DPI (PAW3395)',
+  'perf.unlock26k': 'Unlock 26,000 DPI (PAW3311 interpolated > 12,000, Curve 0x11)',
+  'perf.interpolatedNote': 'Above 12,000 DPI is firmware-interpolated on PAW3311 (not native sensor CPI).',
   'perf.addStage': 'Add stage',
   'perf.removeStage': 'Remove',
   'perf.stageColorTitle': 'Stage {{n}} indicator LED color',
@@ -238,6 +241,7 @@ export default {
   'firmware.specTransport': 'Transport',
   'firmware.transportWebHid': 'WebHID (browser native)',
   'firmware.transportLocalHelper': 'Local Helper (127.0.0.1:19480)',
+  'firmware.transportTauri': 'Desktop App (Native HID)',
   'firmware.specBattery': 'Battery',
   'firmware.batteryCharging': '{{pct}}% (Charging)',
   'firmware.otaTitle': 'OTA lockout protection (0xFFEF)',
@@ -247,7 +251,7 @@ export default {
   'diagnostics.winCardTitle': 'Windows browser compatibility fallback',
   'diagnostics.winCardBadge': 'MI_02 · CVE-2026-79003',
   'diagnostics.winCardBody':
-    'Windows Chrome and Edge strip the mouse MI_02 settings interface from WebHID and block WebUSB on HID class 0x03. Start the Local Helper to connect without changing drivers or firmware.',
+    'Windows Chrome and Edge strip the mouse MI_02 settings interface from WebHID and block WebUSB on HID class 0x03. Download the standalone Valkyrie Control Desktop App for direct native access, or use the optional Local Helper fallback on GitHub Pages.',
   'diagnostics.connectHelperBtn': 'Connect via Local Helper',
   'diagnostics.connectingHelperBtn': 'Connecting',
   'diagnostics.openGuideBtn': 'Compatibility guide',
@@ -257,7 +261,11 @@ export default {
     'Configuration over the 2.4 GHz receiver may occasionally drop packets. Switch to wired USB if settings fail to sync.',
 
   'compat.title': 'Windows compatibility guide',
-  'compat.subtitle': 'Connect VK M3 and VK M3 Lite in Chrome or Edge on Windows 10 and 11',
+  'compat.subtitle': 'Connect VK M3 and VK M3 Lite on Windows 10 and 11 via Desktop App or optional browser helper',
+  'compat.desktopBtn': 'Download Desktop App (Windows)',
+  'compat.optionATitle': 'Recommended: Valkyrie Control Desktop App (Windows)',
+  'compat.optionADesc':
+    'Download the standalone Desktop App for direct native HID access with no browser MI_02 restriction and no extra background script. The companion/ Local Helper below remains available as an optional fallback for GitHub Pages.',
   'compat.closeAria': 'Close compatibility guide',
   'compat.whyTitle': 'Why Windows browsers block direct WebHID',
   'compat.whyBody':
@@ -300,8 +308,9 @@ export default {
 
   'toast.connected': 'Connected: {{name}}',
   'toast.helperConnected': 'Connected via Local Helper: {{name}}',
+  'toast.tauriConnected': 'Connected to {{name}} via Desktop App',
   'toast.wirelessTimeoutTip':
-    '2.4 GHz wireless timed out. Connect via USB cable if transfers remain unstable.',
+    '2.4 GHz wireless timed out. Try unplugging and replugging the 2.4 GHz receiver, or connect via USB cable if transfers remain unstable.',
   'toast.connectionFailed': 'Connection failed: {{msg}}',
   'toast.factoryRestored': 'Factory default settings restored',
   'toast.hardwareRejected': 'Hardware rejected command {{cmd}} (status 0x03)',

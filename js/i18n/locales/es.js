@@ -32,11 +32,13 @@ export default {
   'topbar.statusDongle': 'Receptor 2.4G',
   'topbar.statusHelper': 'Asistente local',
   'topbar.statusHelperDongle': 'Asistente local · 2.4G',
+  'topbar.statusTauri': 'Conectado (App de escritorio)',
+  'topbar.statusTauriDongle': 'Receptor 2.4 GHz (App de escritorio)',
   'topbar.statusUnavailable': 'WebHID no disponible',
   'topbar.connect': 'Conectar ratón',
   'topbar.disconnect': 'Desconectar',
 
-  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3395 · 6 botones)',
+  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3311 · 6 botones)',
   'models.opt.VK_M3': 'VK M3 (E023 · 6 botones)',
 
   'perf.title': 'Sensor y rendimiento',
@@ -46,7 +48,8 @@ export default {
   'perf.stageLabel': 'Nivel {{n}}',
   'perf.activeStage': 'Activo: Nivel {{n}}',
   'perf.lockXY': 'Bloquear X/Y',
-  'perf.unlock26k': 'Desbloquear 26.000 DPI (PAW3395)',
+  'perf.unlock26k': 'Desbloquear 26.000 DPI (PAW3311 interpolado > 12.000, Curva 0x11)',
+  'perf.interpolatedNote': 'Por encima de 12.000 DPI se aplica interpolación de firmware en PAW3311 (no es CPI nativo del sensor).',
   'perf.addStage': 'Añadir nivel',
   'perf.removeStage': 'Eliminar',
   'perf.stageColorTitle': 'Color del LED indicador del nivel {{n}}',
@@ -238,6 +241,7 @@ export default {
   'firmware.specTransport': 'Transporte',
   'firmware.transportWebHid': 'WebHID (nativo del navegador)',
   'firmware.transportLocalHelper': 'Asistente local (127.0.0.1:19480)',
+  'firmware.transportTauri': 'Aplicación de escritorio (HID nativo)',
   'firmware.specBattery': 'Batería',
   'firmware.batteryCharging': '{{pct}}% (Cargando)',
   'firmware.otaTitle': 'Protección de bloqueo OTA (0xFFEF)',
@@ -247,7 +251,7 @@ export default {
   'diagnostics.winCardTitle': 'Alternativa de compatibilidad en Windows',
   'diagnostics.winCardBadge': 'MI_02 · CVE-2026-79003',
   'diagnostics.winCardBody':
-    'Chrome y Edge en Windows eliminan la interfaz de ajustes MI_02 del ratón en WebHID y bloquean WebUSB en la clase HID 0x03. Inicia el Asistente local para conectar sin cambiar controladores ni firmware.',
+    'Chrome y Edge en Windows eliminan la interfaz de ajustes MI_02 del ratón en WebHID y bloquean WebUSB en la clase HID 0x03. Descarga la aplicación de escritorio independiente Valkyrie Control para acceso nativo directo, o usa el Asistente local como respaldo opcional en GitHub Pages.',
   'diagnostics.connectHelperBtn': 'Conectar vía Asistente local',
   'diagnostics.connectingHelperBtn': 'Conectando',
   'diagnostics.openGuideBtn': 'Guía de compatibilidad',
@@ -257,7 +261,11 @@ export default {
     'La configuración mediante el receptor de 2.4 GHz puede perder paquetes ocasionalmente. Cambia a USB con cable si los ajustes no se sincronizan.',
 
   'compat.title': 'Guía de compatibilidad para Windows',
-  'compat.subtitle': 'Conecta VK M3 y VK M3 Lite en Chrome o Edge en Windows 10 y 11',
+  'compat.subtitle': 'Conecta VK M3 y VK M3 Lite en Windows 10 y 11 mediante la aplicación de escritorio o el asistente opcional',
+  'compat.desktopBtn': 'Descargar aplicación de escritorio (Windows)',
+  'compat.optionATitle': 'Recomendado: Valkyrie Control Desktop App (Windows)',
+  'compat.optionADesc':
+    'Instala la aplicación de escritorio independiente para acceso HID nativo directo sin restricciones de MI_02 del navegador ni scripts adicionales en segundo plano. El Asistente local companion/ sigue disponible abajo como respaldo opcional para GitHub Pages.',
   'compat.closeAria': 'Cerrar guía de compatibilidad',
   'compat.whyTitle': 'Por qué los navegadores de Windows bloquean WebHID directo',
   'compat.whyBody':
@@ -301,8 +309,9 @@ export default {
 
   'toast.connected': 'Conectado: {{name}}',
   'toast.helperConnected': 'Conectado vía Asistente local: {{name}}',
+  'toast.tauriConnected': 'Conectado a {{name}} mediante la aplicación de escritorio',
   'toast.wirelessTimeoutTip':
-    'Tiempo de espera agotado en 2.4 GHz. Conecta por cable USB si las transferencias siguen inestables.',
+    'Tiempo de espera agotado en 2.4 GHz. Prueba desconectar y volver a conectar el receptor 2.4 GHz, o conecta por cable USB si las transferencias siguen inestables.',
   'toast.connectionFailed': 'Error de conexión: {{msg}}',
   'toast.factoryRestored': 'Configuración de fábrica restaurada',
   'toast.hardwareRejected': 'El hardware rechazó el comando {{cmd}} (estado 0x03)',

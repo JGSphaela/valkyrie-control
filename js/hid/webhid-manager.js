@@ -23,6 +23,12 @@ import {
   fetchHelperDevices,
   selectPreferredHelperDevice,
 } from './local-bridge-device.js';
+import {
+  TauriBridgeHidDevice,
+  isTauriRuntime,
+  listTauriDevices,
+  selectPreferredTauriDevice,
+} from './tauri-bridge-device.js';
 
 function getReportByteLength(reports, targetReportId = 0x00) {
   if (!Array.isArray(reports) || reports.length === 0) return null;
@@ -110,6 +116,7 @@ export class WebHidManager {
    *   hidApi?: object,
    *   fetchImpl?: typeof fetch,
    *   helperBaseUrl?: string,
+   *   tauriApi?: object,
    * }} [options]
    */
   constructor(options = {}) {
@@ -121,6 +128,7 @@ export class WebHidManager {
     this.writeSettleMs = options.writeSettleMs;
     this.#hidApi = options.hidApi || null;
     this.#fetchImpl = typeof options.fetchImpl === 'function' ? options.fetchImpl : null;
+    this.#tauriApi = options.tauriApi || null;
     this.helperBaseUrl = options.helperBaseUrl || DEFAULT_HELPER_BASE_URL;
 
     this.hidDevice = null;
@@ -137,6 +145,7 @@ export class WebHidManager {
 
   #hidApi;
   #fetchImpl;
+  #tauriApi;
   #onDisconnectBound;
 
   #getHid() {
@@ -144,7 +153,12 @@ export class WebHidManager {
     return typeof navigator !== 'undefined' ? navigator.hid : null;
   }
 
+  isTauri() {
+    return isTauriRuntime(this.#tauriApi ?? undefined);
+  }
+
   isSupported() {
+    if (this.isTauri()) return true;
     const hid = this.#getHid();
     return Boolean(hid && typeof hid.requestDevice === 'function');
   }
@@ -183,6 +197,10 @@ export class WebHidManager {
    * @returns {Promise<{ device: ValkyrieM220Device, state: object, descriptor: object, collection: object }|null>}
    */
   async requestAndConnect() {
+    if (this.isTauri()) {
+      return this.connectViaTauri();
+    }
+
     const hid = this.#getHid();
     if (!hid) {
       throw createProtocolError('WEBHID_UNSUPPORTED', 'WebHID is not supported in this browser');
@@ -218,9 +236,18 @@ export class WebHidManager {
   }
 
   /**
-   * Attempt silent auto-reconnection to previously authorized command interface.
+   * Attempt silent auto-reconnection to previously authorized command interface
+   * (or native desktop HID in Tauri runtime).
    */
   async autoConnectExisting() {
+    if (this.isTauri()) {
+      const api = this.#tauriApi ?? undefined;
+      const devices = await listTauriDevices({ tauriApi: api });
+      const target = selectPreferredTauriDevice(devices);
+      if (!target) return null;
+      return this.connectDevice(this.#createTauriDevice(target, api));
+    }
+
     const hid = this.#getHid();
     if (!hid || typeof hid.getDevices !== 'function') return null;
 
@@ -229,6 +256,41 @@ export class WebHidManager {
     if (!target) return null;
 
     return this.connectDevice(target);
+  }
+
+  #createTauriDevice(deviceInfo, tauriApi) {
+    const tauriDevice = new TauriBridgeHidDevice(deviceInfo, {
+      tauriApi,
+      onDisconnect: () => {
+        if (this.hidDevice === tauriDevice) {
+          this.disconnect(true).catch(() => {});
+        }
+      },
+    });
+    return tauriDevice;
+  }
+
+  /**
+   * Connect directly to the native Tauri v2 `hidapi` desktop driver.
+   *
+   * @param {{ deviceId?: string, tauriApi?: object }} [options]
+   * @returns {Promise<{ device: ValkyrieM220Device, state: object, descriptor: object, collection: object, transportType: 'tauri', helperBaseUrl: null }>}
+   */
+  async connectViaTauri({ deviceId, tauriApi } = {}) {
+    const resolvedApi = tauriApi || this.#tauriApi || undefined;
+    const devices = await listTauriDevices({ tauriApi: resolvedApi });
+    const targetInfo = (deviceId
+      ? devices.find((d) => d.id === deviceId)
+      : null) || selectPreferredTauriDevice(devices);
+
+    if (!targetInfo) {
+      throw createProtocolError(
+        'NO_COMMAND_INTERFACE',
+        'No supported 32-byte Valkyrie MI_02 interface found via desktop HID'
+      );
+    }
+
+    return this.connectDevice(this.#createTauriDevice(targetInfo, resolvedApi));
   }
 
   /**
@@ -272,11 +334,11 @@ export class WebHidManager {
   }
 
   /**
-   * Open and sync a validated command `HIDDevice` (WebHID or `LocalBridgeHidDevice`).
+   * Open and sync a validated command `HIDDevice` (`WebHID`, `LocalBridgeHidDevice`, or `TauriBridgeHidDevice`).
    * Refuses `0xFFEF` OTA devices before calling `.open()`.
    *
-   * @param {HIDDevice|LocalBridgeHidDevice} hidDevice
-   * @returns {Promise<{ device: ValkyrieM220Device, state: object, descriptor: object, collection: object, transportType: 'webhid'|'local-helper', helperBaseUrl: string|null }>}
+   * @param {HIDDevice|LocalBridgeHidDevice|TauriBridgeHidDevice} hidDevice
+   * @returns {Promise<{ device: ValkyrieM220Device, state: object, descriptor: object, collection: object, transportType: 'webhid'|'local-helper'|'tauri', helperBaseUrl: string|null }>}
    */
   async connectDevice(hidDevice) {
     if (isOtaOnlyDevice(hidDevice)) {
@@ -296,8 +358,9 @@ export class WebHidManager {
 
     await this.disconnect(false);
 
+    const isTauriDevice = hidDevice?.transport === 'tauri' || hidDevice instanceof TauriBridgeHidDevice;
     const isLocalHelper = hidDevice?.transport === 'local-helper' || hidDevice instanceof LocalBridgeHidDevice;
-    const transportType = isLocalHelper ? 'local-helper' : 'webhid';
+    const transportType = isTauriDevice ? 'tauri' : (isLocalHelper ? 'local-helper' : 'webhid');
     const helperBaseUrl = isLocalHelper ? (hidDevice.helperBaseUrl || this.helperBaseUrl) : null;
 
     if (!hidDevice.opened) {
@@ -305,7 +368,7 @@ export class WebHidManager {
     }
 
     const descriptor = getDeviceByPid(hidDevice.productId);
-    const isWireless = Boolean(descriptor.isWireless || (isLocalHelper && hidDevice.isWireless));
+    const isWireless = Boolean(descriptor.isWireless || ((isLocalHelper || isTauriDevice) && hidDevice.isWireless));
     const device = new ValkyrieM220Device(hidDevice, {
       isWireless,
       logger: this.logger,
@@ -321,7 +384,7 @@ export class WebHidManager {
     this.activeCollection = collection;
     this.transportType = transportType;
 
-    if (!isLocalHelper) {
+    if (transportType === 'webhid') {
       const hid = this.#getHid();
       if (hid && typeof hid.addEventListener === 'function') {
         hid.addEventListener('disconnect', this.#onDisconnectBound);

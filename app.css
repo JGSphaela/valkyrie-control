@@ -527,6 +527,7 @@ p {
   border: 1px solid transparent;
   font-size: 13px;
   font-weight: 500;
+  text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
   transition: background-color var(--ease-snap), border-color var(--ease-snap), color var(--ease-snap), opacity var(--ease-snap), transform var(--ease-snap);
@@ -743,6 +744,7 @@ p {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -1850,6 +1852,11 @@ p {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.compat-section-primary {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
 }
 
 .compat-section h3 {

@@ -32,11 +32,13 @@ export default {
   'topbar.statusDongle': 'Приёмник 2.4G',
   'topbar.statusHelper': 'Локальный помощник',
   'topbar.statusHelperDongle': 'Локальный помощник · 2.4G',
+  'topbar.statusTauri': 'Подключено (Настольное приложение)',
+  'topbar.statusTauriDongle': 'Приёмник 2.4 ГГц (Настольное приложение)',
   'topbar.statusUnavailable': 'WebHID недоступен',
   'topbar.connect': 'Подключить мышь',
   'topbar.disconnect': 'Отключить',
 
-  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3395 · 6 кнопок)',
+  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3311 · 6 кнопок)',
   'models.opt.VK_M3': 'VK M3 (E023 · 6 кнопок)',
 
   'perf.title': 'Сенсор и производительность',
@@ -46,7 +48,8 @@ export default {
   'perf.stageLabel': 'Ступень {{n}}',
   'perf.activeStage': 'Активна: ступень {{n}}',
   'perf.lockXY': 'Связать X/Y',
-  'perf.unlock26k': 'Разблокировать 26 000 DPI (PAW3395)',
+  'perf.unlock26k': 'Разблокировать 26 000 DPI (PAW3311 интерполяция > 12 000, кривая 0x11)',
+  'perf.interpolatedNote': 'Значения выше 12 000 DPI на PAW3311 интерполируются прошивкой (не нативный CPI сенсора).',
   'perf.addStage': 'Добавить ступень',
   'perf.removeStage': 'Удалить',
   'perf.stageColorTitle': 'Цвет индикатора ступени {{n}}',
@@ -238,6 +241,7 @@ export default {
   'firmware.specTransport': 'Транспорт',
   'firmware.transportWebHid': 'WebHID (нативный браузерный)',
   'firmware.transportLocalHelper': 'Локальный помощник (127.0.0.1:19480)',
+  'firmware.transportTauri': 'Настольное приложение (нативный HID)',
   'firmware.specBattery': 'Батарея',
   'firmware.batteryCharging': '{{pct}}% (Зарядка)',
   'firmware.otaTitle': 'Защита блокировки OTA (0xFFEF)',
@@ -247,7 +251,7 @@ export default {
   'diagnostics.winCardTitle': 'Резервный режим совместимости для Windows',
   'diagnostics.winCardBadge': 'MI_02 · CVE-2026-79003',
   'diagnostics.winCardBody':
-    'Chrome и Edge в Windows исключают интерфейс настроек MI_02 из WebHID и блокируют WebUSB для класса HID 0x03. Запустите локальный помощник для подключения без замены драйверов и прошивки.',
+    'Chrome и Edge в Windows исключают интерфейс настроек MI_02 из WebHID и блокируют WebUSB для класса HID 0x03. Скачайте автономное настольное приложение Valkyrie Control для прямого доступа или используйте локальный помощник как запасной вариант на GitHub Pages.',
   'diagnostics.connectHelperBtn': 'Подключить через локальный помощник',
   'diagnostics.connectingHelperBtn': 'Подключение',
   'diagnostics.openGuideBtn': 'Руководство по совместимости',
@@ -257,7 +261,11 @@ export default {
     'При настройке через приёмник 2.4 ГГц возможны редкие потери пакетов. Переключитесь на проводной USB, если параметры не синхронизируются.',
 
   'compat.title': 'Руководство по совместимости для Windows',
-  'compat.subtitle': 'Подключение VK M3 и VK M3 Lite в Chrome или Edge на Windows 10 и 11',
+  'compat.subtitle': 'Подключение VK M3 и VK M3 Lite в Windows 10 и 11 через настольное приложение или опциональный помощник',
+  'compat.desktopBtn': 'Скачать настольное приложение (Windows)',
+  'compat.optionATitle': 'Рекомендуется: Valkyrie Control Desktop App (Windows)',
+  'compat.optionADesc':
+    'Скачайте автономное настольное приложение для прямого нативного доступа к HID без ограничений MI_02 в браузере и без фоновых скриптов. Локальный помощник companion/ ниже остаётся доступным как резервный вариант для GitHub Pages.',
   'compat.closeAria': 'Закрыть руководство по совместимости',
   'compat.whyTitle': 'Почему браузеры Windows блокируют прямой WebHID',
   'compat.whyBody':
@@ -301,8 +309,9 @@ export default {
 
   'toast.connected': 'Подключено: {{name}}',
   'toast.helperConnected': 'Подключено через локальный помощник: {{name}}',
+  'toast.tauriConnected': 'Подключено к {{name}} через настольное приложение',
   'toast.wirelessTimeoutTip':
-    'Превышено время ожидания по каналу 2.4 ГГц. Подключитесь по кабелю USB, если передача остаётся нестабильной.',
+    'Превышено время ожидания по каналу 2.4 ГГц. Попробуйте отключить и снова подключить приёмник 2.4 ГГц или используйте кабель USB, если передача остаётся нестабильной.',
   'toast.connectionFailed': 'Ошибка подключения: {{msg}}',
   'toast.factoryRestored': 'Заводские настройки восстановлены',
   'toast.hardwareRejected': 'Устройство отклонило команду {{cmd}} (статус 0x03)',

@@ -135,7 +135,7 @@
         </div>
         <div class="sidebar-meta-row">
           <span class="meta-key" data-i18n="sidebar.sensor">Sensor</span>
-          <span id="sidebarSensor" class="mono-tag">PAW3395</span>
+          <span id="sidebarSensor" class="mono-tag">PAW3311</span>
         </div>
       </div>
     </aside>
@@ -215,7 +215,7 @@
           </div>
 
           <select id="selModel" class="select-input select-sm" aria-label="Mouse model" data-i18n-aria="topbar.modelAria">
-            <option value="VK_M3_LITE" data-i18n="models.opt.VK_M3_LITE">VK M3 Lite (M220 · PAW3395 · 6 keys)</option>
+            <option value="VK_M3_LITE" data-i18n="models.opt.VK_M3_LITE">VK M3 Lite (M220 · PAW3311 · 6 keys)</option>
             <option value="VK_M3" data-i18n="models.opt.VK_M3">VK M3 (E023 · 6 keys)</option>
           </select>
 
@@ -266,10 +266,11 @@
             </button>
           </div>
           <p class="notice-body mb-16" data-i18n="diagnostics.winCardBody">
-            Windows Chrome and Edge strip the mouse MI_02 settings interface from WebHID and block WebUSB on HID class 0x03. Start the Local Helper to connect without changing drivers or firmware.
+            Windows Chrome and Edge strip the mouse MI_02 settings interface from WebHID and block WebUSB on HID class 0x03. Download the standalone Valkyrie Control Desktop App for direct native access, or use the optional Local Helper fallback on GitHub Pages.
           </p>
           <div class="header-action-group">
-            <button id="btnHelperConnect" class="btn btn-primary btn-sm" type="button" data-i18n="diagnostics.connectHelperBtn">Connect via Local Helper</button>
+            <a id="btnDownloadDesktop" class="btn btn-primary btn-sm" href="https://github.com/JGSphaela/valkyrie-control/releases/latest" target="_blank" rel="noopener noreferrer" data-i18n="compat.desktopBtn">Download Desktop App (Windows)</a>
+            <button id="btnHelperConnect" class="btn btn-ghost btn-sm" type="button" data-i18n="diagnostics.connectHelperBtn">Connect via Local Helper</button>
             <button id="btnOpenCompatGuide" class="btn btn-ghost btn-sm" type="button" data-i18n="diagnostics.openGuideBtn">Compatibility guide</button>
           </div>
         </section>
@@ -320,13 +321,14 @@
                 </label>
                 <label class="inline-check" id="wrapUnlock26k">
                   <input id="chkUnlock26k" type="checkbox" />
-                  <span data-i18n="perf.unlock26k">Unlock 26,000 DPI (PAW3395)</span>
+                  <span data-i18n="perf.unlock26k">Unlock 26,000 DPI (PAW3311 interpolated &gt; 12,000, Curve 0x11)</span>
                 </label>
                 <button id="btnRemoveDpiStage" class="btn btn-ghost btn-sm" type="button" data-i18n="perf.removeStage">Remove</button>
                 <button id="btnAddDpiStage" class="btn btn-primary btn-sm" type="button" data-i18n="perf.addStage">Add stage</button>
               </div>
             </div>
             <div id="dpiStagesList" class="dpi-stages-list"></div>
+            <p id="perfInterpolatedNote" class="field-hint mt-12" data-i18n="perf.interpolatedNote">Above 12,000 DPI is firmware-interpolated on PAW3311 (not native sensor CPI).</p>
           </div>
 
           <!-- Polling Rate Card -->
@@ -470,7 +472,7 @@
               <div class="card-header">
                 <div class="card-title-group">
                   <h2 id="schematicModelName">VK M3 Lite</h2>
-                  <span id="schematicSubtitle" class="card-sub-inline">6 physical buttons · PAW3395</span>
+                  <span id="schematicSubtitle" class="card-sub-inline">6 physical buttons · PAW3311</span>
                 </div>
                 <span id="schematicHardwareBadge" class="mono-tag" data-i18n="buttons.offlinePreview">Offline preview</span>
               </div>
@@ -911,7 +913,7 @@
                 </div>
                 <div class="spec-row">
                   <span class="spec-key" data-i18n="firmware.specSensor">Optical sensor</span>
-                  <span id="fwSpecSensor" class="spec-val mono-num">PAW3395 (0x11)</span>
+                  <span id="fwSpecSensor" class="spec-val mono-num">PAW3311 (0x11)</span>
                 </div>
                 <div class="spec-row">
                   <span class="spec-key" data-i18n="firmware.specVidPid">USB VID / PID</span>
@@ -971,7 +973,7 @@
       <div class="modal-header">
         <div class="modal-title-block">
           <h2 id="compatModalTitle" data-i18n="compat.title">Windows compatibility guide</h2>
-          <p id="compatModalSubtitle" class="field-hint" data-i18n="compat.subtitle">Connect VK M3 and VK M3 Lite in Chrome or Edge on Windows 10 and 11</p>
+          <p id="compatModalSubtitle" class="field-hint" data-i18n="compat.subtitle">Connect VK M3 and VK M3 Lite on Windows 10 and 11 via Desktop App or optional browser helper</p>
         </div>
         <button id="btnModalCompatIconClose" class="btn btn-icon btn-sm" type="button" aria-label="Close compatibility guide" title="Close compatibility guide" data-i18n-aria="compat.closeAria" data-i18n-title="compat.closeAria">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -982,6 +984,15 @@
       </div>
 
       <div class="modal-body">
+        <div class="compat-section compat-section-primary">
+          <div class="compat-section-head">
+            <h3 data-i18n="compat.optionATitle">Recommended: Valkyrie Control Desktop App (Windows)</h3>
+          </div>
+          <p class="notice-body" data-i18n="compat.optionADesc">
+            Download the standalone Desktop App for direct native HID access with no browser MI_02 restriction and no extra background script. The companion/ Local Helper below remains available as an optional fallback for GitHub Pages.
+          </p>
+        </div>
+
         <div class="compat-section">
           <div class="compat-section-head">
             <h3 data-i18n="compat.whyTitle">Why Windows browsers block direct WebHID</h3>
@@ -1048,7 +1059,8 @@
 
       <div class="card-footer-actions">
         <button id="btnModalCompatClose" class="btn btn-ghost btn-sm" type="button" data-i18n="compat.closeBtn">Close</button>
-        <button id="btnModalHelperConnect" class="btn btn-primary btn-sm" type="button" data-i18n="compat.connectBtn">Connect via Local Helper</button>
+        <button id="btnModalHelperConnect" class="btn btn-ghost btn-sm" type="button" data-i18n="compat.connectBtn">Connect via Local Helper</button>
+        <a id="btnModalDownloadDesktop" class="btn btn-primary btn-sm" href="https://github.com/JGSphaela/valkyrie-control/releases/latest" target="_blank" rel="noopener noreferrer" data-i18n="compat.desktopBtn">Download Desktop App (Windows)</a>
       </div>
     </div>
   </div>

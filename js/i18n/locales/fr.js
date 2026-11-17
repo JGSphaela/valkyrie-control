@@ -32,11 +32,13 @@ export default {
   'topbar.statusDongle': 'Récepteur 2.4G',
   'topbar.statusHelper': 'Assistant local',
   'topbar.statusHelperDongle': 'Assistant local · 2.4G',
+  'topbar.statusTauri': 'Connecté (Application bureau)',
+  'topbar.statusTauriDongle': 'Récepteur 2.4 GHz (Application bureau)',
   'topbar.statusUnavailable': 'WebHID indisponible',
   'topbar.connect': 'Connecter la souris',
   'topbar.disconnect': 'Déconnecter',
 
-  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3395 · 6 boutons)',
+  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3311 · 6 boutons)',
   'models.opt.VK_M3': 'VK M3 (E023 · 6 boutons)',
 
   'perf.title': 'Capteur & performances',
@@ -46,7 +48,8 @@ export default {
   'perf.stageLabel': 'Palier {{n}}',
   'perf.activeStage': 'Actif : Palier {{n}}',
   'perf.lockXY': 'Lier X/Y',
-  'perf.unlock26k': 'Débloquer 26 000 DPI (PAW3395)',
+  'perf.unlock26k': 'Débloquer 26 000 DPI (PAW3311 interpolé > 12 000, Courbe 0x11)',
+  'perf.interpolatedNote': 'Au-delà de 12 000 DPI, le PAW3311 utilise une interpolation logicielle (non natif capteur).',
   'perf.addStage': 'Ajouter un palier',
   'perf.removeStage': 'Supprimer',
   'perf.stageColorTitle': 'Couleur LED indicatrice du palier {{n}}',
@@ -239,6 +242,7 @@ export default {
   'firmware.specTransport': 'Transport',
   'firmware.transportWebHid': 'WebHID (natif navigateur)',
   'firmware.transportLocalHelper': 'Assistant local (127.0.0.1:19480)',
+  'firmware.transportTauri': 'Application bureau (HID natif)',
   'firmware.specBattery': 'Batterie',
   'firmware.batteryCharging': '{{pct}}% (En charge)',
   'firmware.otaTitle': 'Protection de verrouillage OTA (0xFFEF)',
@@ -248,7 +252,7 @@ export default {
   'diagnostics.winCardTitle': 'Solution de repli sous Windows',
   'diagnostics.winCardBadge': 'MI_02 · CVE-2026-79003',
   'diagnostics.winCardBody':
-    'Chrome et Edge sous Windows retirent l’interface de réglages MI_02 de WebHID et bloquent WebUSB sur la classe HID 0x03. Lancez l’Assistant local pour vous connecter sans modifier les pilotes ni le micrologiciel.',
+    'Chrome et Edge sous Windows retirent l’interface de réglages MI_02 de WebHID et bloquent WebUSB sur la classe HID 0x03. Téléchargez l’application bureau autonome Valkyrie Control pour un accès natif direct, ou utilisez l’Assistant local en recours optionnel sur GitHub Pages.',
   'diagnostics.connectHelperBtn': 'Connecter via l’Assistant local',
   'diagnostics.connectingHelperBtn': 'Connexion',
   'diagnostics.openGuideBtn': 'Guide de compatibilité',
@@ -258,7 +262,11 @@ export default {
     'La configuration via le récepteur 2.4 GHz peut occasionnellement perdre des paquets. Passez en USB filaire si la synchronisation échoue.',
 
   'compat.title': 'Guide de compatibilité Windows',
-  'compat.subtitle': 'Connecter VK M3 et VK M3 Lite dans Chrome ou Edge sous Windows 10 et 11',
+  'compat.subtitle': 'Connecter VK M3 et VK M3 Lite sous Windows 10 et 11 via l’application bureau ou l’assistant navigateur optionnel',
+  'compat.desktopBtn': 'Télécharger l’application bureau (Windows)',
+  'compat.optionATitle': 'Recommandé : Valkyrie Control Desktop App (Windows)',
+  'compat.optionADesc':
+    'Téléchargez l’application bureau autonome pour un accès HID natif direct sans restriction MI_02 du navigateur ni script en arrière-plan. L’assistant local companion/ ci-dessous reste disponible comme solution de secours optionnelle pour GitHub Pages.',
   'compat.closeAria': 'Fermer le guide de compatibilité',
   'compat.whyTitle': 'Pourquoi les navigateurs Windows bloquent WebHID direct',
   'compat.whyBody':
@@ -302,8 +310,9 @@ export default {
 
   'toast.connected': 'Connecté : {{name}}',
   'toast.helperConnected': 'Connecté via l’Assistant local : {{name}}',
+  'toast.tauriConnected': 'Connecté à {{name}} via l’application bureau',
   'toast.wirelessTimeoutTip':
-    'Délai dépassé en sans-fil 2.4 GHz. Branchez le câble USB si les transferts restent instables.',
+    'Délai dépassé en sans-fil 2.4 GHz. Essayez de débrancher puis rebrancher le récepteur 2.4 GHz, ou branchez le câble USB si les transferts restent instables.',
   'toast.connectionFailed': 'Échec de la connexion : {{msg}}',
   'toast.factoryRestored': 'Paramètres d’usine restaurés',
   'toast.hardwareRejected': 'Le matériel a rejeté la commande {{cmd}} (statut 0x03)',

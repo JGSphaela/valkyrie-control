@@ -32,11 +32,13 @@ export default {
   'topbar.statusDongle': '2.4G 接收器',
   'topbar.statusHelper': '本機小幫手',
   'topbar.statusHelperDongle': '本機小幫手 · 2.4G',
+  'topbar.statusTauri': '已連線（桌面應用程式）',
+  'topbar.statusTauriDongle': '2.4 GHz 接收器（桌面應用程式）',
   'topbar.statusUnavailable': 'WebHID 不可用',
   'topbar.connect': '連線滑鼠',
   'topbar.disconnect': '中斷連線',
 
-  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3395 · 6 鍵)',
+  'models.opt.VK_M3_LITE': 'VK M3 Lite (M220 · PAW3311 · 6 鍵)',
   'models.opt.VK_M3': 'VK M3 (E023 · 6 鍵)',
 
   'perf.title': '感測器與效能',
@@ -45,7 +47,8 @@ export default {
   'perf.stageLabel': '段位 {{n}}',
   'perf.activeStage': '目前段位：第 {{n}} 段',
   'perf.lockXY': '鎖定 X/Y 軸',
-  'perf.unlock26k': '解鎖 26,000 DPI (PAW3395)',
+  'perf.unlock26k': '解鎖 26,000 DPI (PAW3311 超 12,000 韌體插值，曲線 0x11)',
+  'perf.interpolatedNote': 'PAW3311 超過 12,000 DPI 為韌體插值輸出（非感測器原生 CPI）。',
   'perf.addStage': '新增段位',
   'perf.removeStage': '移除',
   'perf.stageColorTitle': '第 {{n}} 段指示燈 RGB 色彩',
@@ -233,6 +236,7 @@ export default {
   'firmware.specTransport': '傳輸通道',
   'firmware.transportWebHid': 'WebHID（瀏覽器原生）',
   'firmware.transportLocalHelper': '本機小幫手 (127.0.0.1:19480)',
+  'firmware.transportTauri': '桌面應用程式（原生 HID）',
   'firmware.specBattery': '電池狀態',
   'firmware.batteryCharging': '{{pct}}%（充電中）',
   'firmware.otaTitle': 'OTA 鎖定保護 (0xFFEF)',
@@ -242,7 +246,7 @@ export default {
   'diagnostics.winCardTitle': 'Windows 瀏覽器相容性備援方案',
   'diagnostics.winCardBadge': 'MI_02 · CVE-2026-79003',
   'diagnostics.winCardBody':
-    'Windows 版 Chrome 與 Edge 會從 WebHID 中移除滑鼠 MI_02 設定介面，並封鎖 HID 類別 0x03 的 WebUSB 存取。啟動本機小幫手即可連線，無須更換驅動程式或韌體。',
+    'Windows 版 Chrome 與 Edge 會從 WebHID 中移除滑鼠 MI_02 設定介面，並封鎖 HID 類別 0x03 的 WebUSB 存取。建議下載獨立的 Valkyrie Control 桌面應用程式直接原生連線，亦可在 GitHub Pages 上使用本機小幫手作為選用備援方案。',
   'diagnostics.connectHelperBtn': '透過本機小幫手連線',
   'diagnostics.connectingHelperBtn': '連線中',
   'diagnostics.openGuideBtn': '相容性指南',
@@ -252,7 +256,11 @@ export default {
     '透過 2.4 GHz 接收器進行設定時偶爾可能遺失封包。若設定同步失敗，請改用有線 USB 連線。',
 
   'compat.title': 'Windows 相容性指南',
-  'compat.subtitle': '在 Windows 10 與 11 的 Chrome 或 Edge 中連線 VK M3 與 VK M3 Lite',
+  'compat.subtitle': '在 Windows 10 與 11 上透過桌面應用程式或選用瀏覽器小幫手連線 VK M3 與 VK M3 Lite',
+  'compat.desktopBtn': '下載桌面應用程式 (Windows)',
+  'compat.optionATitle': '建議方案：Valkyrie Control 桌面應用程式 (Windows)',
+  'compat.optionADesc':
+    '下載獨立桌面應用程式即可直接進行原生 HID 存取，不受瀏覽器 MI_02 限制且無須額外背景指令碼。下方 companion/ 本機小幫手仍保留為 GitHub Pages 的選用備援方案。',
   'compat.closeAria': '關閉相容性指南',
   'compat.whyTitle': '為何 Windows 瀏覽器封鎖直連 WebHID',
   'compat.whyBody':
@@ -295,7 +303,8 @@ export default {
 
   'toast.connected': '已連線：{{name}}',
   'toast.helperConnected': '已透過本機小幫手連線：{{name}}',
-  'toast.wirelessTimeoutTip': '2.4 GHz 無線傳輸逾時。若傳輸持續不穩定，請改用 USB 有線連接。',
+  'toast.tauriConnected': '已透過桌面應用程式連線：{{name}}',
+  'toast.wirelessTimeoutTip': '2.4 GHz 無線傳輸逾時。請嘗試拔插 2.4 GHz 接收器後重試；若傳輸持續不穩定，請改用 USB 有線連接。',
   'toast.connectionFailed': '連線失敗：{{msg}}',
   'toast.factoryRestored': '已恢復原廠預設設定',
   'toast.hardwareRejected': '硬體拒絕了指令 {{cmd}} (狀態碼 0x03)',

@@ -155,6 +155,7 @@ test('all 10 locales have identical key sets, placeholders, and clean Valkyrie u
     'firmware.specTransport',
     'firmware.transportWebHid',
     'firmware.transportLocalHelper',
+    'firmware.transportTauri',
     'diagnostics.winCardTitle',
     'diagnostics.winCardBadge',
     'diagnostics.connectHelperBtn',
@@ -164,6 +165,8 @@ test('all 10 locales have identical key sets, placeholders, and clean Valkyrie u
     'diagnostics.wirelessWarnTitle',
     'compat.title',
     'compat.subtitle',
+    'compat.desktopBtn',
+    'compat.optionATitle',
     'compat.closeAria',
     'compat.whyTitle',
     'compat.osMatrixTitle',
@@ -187,6 +190,20 @@ test('all 10 locales have identical key sets, placeholders, and clean Valkyrie u
 
     assert.deepEqual(missing, [], `Locale ${code} missing keys: ${missing.join(', ')}`);
     assert.deepEqual(extra, [], `Locale ${code} extra keys: ${extra.join(', ')}`);
+
+    assert.ok(
+      dict['models.opt.VK_M3_LITE'].includes('PAW3311'),
+      `${code}[models.opt.VK_M3_LITE] must reference PAW3311`
+    );
+    assert.equal(
+      dict['models.opt.VK_M3_LITE'].includes('PAW3395'),
+      false,
+      `${code}[models.opt.VK_M3_LITE] must not reference PAW3395`
+    );
+    assert.ok(
+      dict['perf.unlock26k'].includes('PAW3311') && dict['perf.unlock26k'].includes('0x11'),
+      `${code}[perf.unlock26k] must reference PAW3311 and curve 0x11`
+    );
 
     for (const key of enKeys) {
       const val = dict[key];
