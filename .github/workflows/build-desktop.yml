@@ -3,6 +3,8 @@ name: Build Valkyrie Control Desktop
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'src-tauri/**'
       - 'scripts/**'
